@@ -1,0 +1,26 @@
+{
+  "name": "Dra. Adriana Parra - Odontología Especializada",
+  "short_name": "Dra. Parra",
+  "description": "Sistema Odontológico, Ficha Clínica Digital y Portal del Paciente",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f766e",
+  "theme_color": "#0f766e",
+  "categories": ["medical", "health", "productivity"],
+  "icons": [
+    {
+      "src": "/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

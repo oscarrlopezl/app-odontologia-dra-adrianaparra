@@ -27,6 +27,7 @@ import {
   Sparkles,
   Printer,
   Pill,
+  KeyRound,
 } from 'lucide-react';
 
 export default function PatientDetailView({ patient }) {
@@ -126,6 +127,11 @@ export default function PatientDetailView({ patient }) {
                     <span>Nacimiento: {patient.birth_date}</span>
                   </span>
                 )}
+
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-teal-50 text-teal-800 border border-teal-200 font-mono font-bold text-xs" title="Clave de acceso al portal privado del paciente">
+                  <KeyRound className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Clave Portal: {patient.access_code || patient.document_id?.replace(/\D/g, '').slice(-4) || '1234'}</span>
+                </span>
               </div>
 
               {/* Badges de Condiciones Médicas */}

@@ -24,14 +24,13 @@ import {
   Smartphone,
   Pill,
   Printer,
-  WifiOff
+  WifiOff,
+  KeyRound
 } from 'lucide-react';
 
 export default function PatientPortalPage() {
   const {
     patients,
-    activePatientId,
-    setActivePatientId,
     budgets,
     payments,
     clinicalRecords,
@@ -41,10 +40,18 @@ export default function PatientPortalPage() {
     settings,
     showToast,
     isOnline,
+    authenticatedPatient,
+    loginPatient,
+    logoutPatient,
   } = useDental();
 
-  // Paciente logueado (por defecto toma el primero o el activo, con selector para demo)
-  const [currentPatientId, setCurrentPatientId] = useState(activePatientId || patients[0]?.id || '');
+  // Estados de inicio de sesión privado del paciente
+  const [docIdInput, setDocIdInput] = useState('');
+  const [pinInput, setPinInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Estados de navegación dentro del portal
   const [activeTab, setActiveTab] = useState('tratamiento'); // tratamiento, estado_cuenta, radiografias, agendar, promos
   const [selectedImageZoom, setSelectedImageZoom] = useState(null);
   const [selectedPrescription, setSelectedPrescription] = useState(null);
@@ -57,8 +64,132 @@ export default function PatientPortalPage() {
   });
   const [bookingSent, setBookingSent] = useState(false);
 
-  const currentPatient = patients.find((p) => p.id === currentPatientId) || patients[0];
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 40.0;
+  const handlePatientLogin = (e) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setLoginError('');
+
+    setTimeout(() => {
+      const res = loginPatient(docIdInput, pinInput);
+      setIsLoggingIn(false);
+      if (!res.success) {
+        setLoginError(res.error || 'Cédula o clave incorrecta');
+      }
+    }, 200);
+  };
+
+  // Si el paciente aún no ha iniciado sesión, mostrar pantalla de acceso privado
+  if (!authenticatedPatient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-900 via-teal-950 to-slate-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200">
+          {/* Logo y Encabezado */}
+          <div className="text-center space-y-3">
+            <div className="inline-block p-3 bg-teal-50 rounded-2xl border border-teal-100 shadow-xs">
+              <img
+                src={settings?.logo_url || '/logo-dra-adrianaparra.png'}
+                alt="Dra. Adriana Parra"
+                className="max-h-16 w-auto object-contain mx-auto"
+              />
+            </div>
+            <div>
+              <h1 className="text-lg font-extrabold text-slate-900">
+                Portal Privado del Paciente
+              </h1>
+              <p className="text-xs text-teal-700 font-semibold mt-0.5">
+                {settings?.doctor_name || 'Dra. Adriana Parra'} • Odontología Especializada
+              </p>
+              <p className="text-xs text-slate-700 mt-2">
+                Ingresa con tu Cédula y tu Clave de Acceso para consultar tu tratamiento, récipes, radiografías y saldo de forma segura y privada.
+              </p>
+            </div>
+          </div>
+
+          {/* Formulario de Login del Paciente */}
+          <form onSubmit={handlePatientLogin} className="space-y-4">
+            {loginError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2 font-medium animate-in shake">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                Cédula de Identidad *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={docIdInput}
+                  onChange={(e) => {
+                    setDocIdInput(e.target.value);
+                    if (loginError) setLoginError('');
+                  }}
+                  placeholder="Ej: V-19842135 o 19842135"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                Clave de Acceso Privada (PIN) *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <input
+                  type="password"
+                  value={pinInput}
+                  onChange={(e) => {
+                    setPinInput(e.target.value);
+                    if (loginError) setLoginError('');
+                  }}
+                  placeholder="Ingresa tu clave de acceso"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm font-mono font-bold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  required
+                />
+              </div>
+              <p className="text-[11px] text-slate-700 mt-1">
+                Clave por defecto: últimos 4 dígitos de tu cédula o la clave entregada por la doctora.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold rounded-xl shadow-lg shadow-teal-600/25 transition flex items-center justify-center gap-2"
+            >
+              <span>{isLoggingIn ? 'Verificando expediente...' : 'Ingresar a mi Expediente'}</span>
+            </button>
+          </form>
+
+          {/* Ayuda por WhatsApp */}
+          <div className="pt-4 border-t border-slate-100 text-center space-y-1.5">
+            <p className="text-xs text-slate-700">¿No tienes tu clave o necesitas consultar tu cita?</p>
+            <a
+              href={`https://wa.me/${(settings?.whatsapp_phone || settings?.phone)?.replace(/\D/g, '')}?text=Hola%20Dra.%20Adriana%2C%20necesito%20mi%20clave%20de%20acceso%20para%20entrar%20a%20mi%20portal%20de%20paciente`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900 hover:underline"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span>Pedir clave a la Dra. por WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentPatient = authenticatedPatient;
+  const exchangeRate = Number(settings?.usd_exchange_rate) || 883.40;
 
   // Presupuesto y fases del paciente
   const patientBudgets = budgets.filter((b) => b.patient_id === currentPatient?.id);
@@ -165,18 +296,15 @@ export default function PatientPortalPage() {
               </div>
             </div>
 
-            {/* Selector de Paciente para pruebas/demo */}
-            <select
-              value={currentPatientId}
-              onChange={(e) => setCurrentPatientId(e.target.value)}
-              className="bg-teal-900/60 border border-teal-500/30 text-white text-[10px] rounded-lg px-2 py-1 focus:outline-none"
+            {/* Botón Salir / Cerrar Sesión Privada */}
+            <button
+              onClick={logoutPatient}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-900/60 hover:bg-teal-900/90 text-teal-100 hover:text-white text-[11px] font-bold border border-teal-500/30 transition shadow-xs"
+              title="Cerrar sesión de mi expediente privado"
             >
-              {patients.map((p) => (
-                <option key={p.id} value={p.id} className="text-slate-900 bg-white">
-                  {p.full_name.split(' ')[0]}
-                </option>
-              ))}
-            </select>
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Salir</span>
+            </button>
           </div>
         </header>
 

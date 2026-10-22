@@ -20,7 +20,8 @@ import {
   MessageSquare,
   AlertTriangle,
   CheckCircle2,
-  X
+  X,
+  KeyRound
 } from 'lucide-react';
 
 export default function ClinicSettingsPage() {
@@ -47,6 +48,7 @@ export default function ClinicSettingsPage() {
     clinic_name: settings?.clinic_name || 'Centro Odontológico Especializado Dra. Adriana Parra',
     phone: settings?.phone || '+58 412-1234567',
     whatsapp_phone: settings?.whatsapp_phone || settings?.phone || '+58 412-1234567',
+    doctor_pin: settings?.doctor_pin || '1234',
     address: settings?.address || 'Guacara / Yagua, Edo. Carabobo',
     usd_exchange_rate: settings?.usd_exchange_rate || 883.40,
     schedule: settings?.schedule || 'Lunes a Sábado: 8:00 AM - 5:00 PM',
@@ -291,6 +293,26 @@ export default function ClinicSettingsPage() {
                     </a>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                  Clave / PIN de Acceso al Panel de la Doctora *
+                </label>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={formSettings.doctor_pin}
+                    onChange={(e) => setFormSettings({ ...formSettings, doctor_pin: e.target.value })}
+                    placeholder="Ej: 1234"
+                    className="w-full pl-9 pr-4 py-2.5 text-xs font-mono font-bold text-slate-900 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                </div>
+                <p className="text-[10px] text-slate-700 mt-1">
+                  Protege tu panel clínico en cualquier teléfono o PC.
+                </p>
               </div>
 
               <div>

@@ -11,10 +11,11 @@ import {
   ExternalLink,
   Activity,
   HeartPulse,
+  Lock,
 } from 'lucide-react';
 
 export default function DoctorSidebar() {
-  const { settings, connectedToSupabase } = useDental();
+  const { settings, connectedToSupabase, logoutDoctor } = useDental();
 
   const navItems = [
     { to: '/doctor', label: 'Pacientes y Fichas', icon: Users, exact: true },
@@ -102,6 +103,17 @@ export default function DoctorSidebar() {
             <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
+
+        {/* Bloquear Panel de la Doctora */}
+        <button
+          type="button"
+          onClick={logoutDoctor}
+          className="flex items-center justify-center gap-2 w-full py-2 text-xs font-bold text-rose-300 bg-rose-950/40 hover:bg-rose-900/60 rounded-xl border border-rose-800/40 transition"
+          title="Bloquear el panel de la doctora con clave"
+        >
+          <Lock className="w-3.5 h-3.5" />
+          <span>Bloquear Panel Clínico</span>
+        </button>
 
         <div className="text-[10px] text-slate-500 text-center">
           Desarrollado para Guacara / Yagua 🇻🇪

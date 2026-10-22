@@ -8,6 +8,8 @@ import BudgetsAndPaymentsPage from './pages/doctor/BudgetsAndPaymentsPage';
 import CashRegisterPage from './pages/doctor/CashRegisterPage';
 import ClinicSettingsPage from './pages/doctor/ClinicSettingsPage';
 import PatientPortalPage from './pages/patient/PatientPortalPage';
+import DoctorLoginScreen from './components/doctor/DoctorLoginScreen';
+import PwaInstallPrompt from './components/common/PwaInstallPrompt';
 import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 
 function ToastContainer() {
@@ -42,8 +44,14 @@ function ToastContainer() {
   );
 }
 
-// Layout para el entorno de escritorio de la Doctora
+// Layout para el entorno de escritorio de la Doctora (Protegido por Clave)
 function DoctorLayout({ children }) {
+  const { isDoctorAuthenticated } = useDental();
+
+  if (!isDoctorAuthenticated) {
+    return <DoctorLoginScreen />;
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans">
       <DoctorSidebar />
@@ -109,6 +117,9 @@ export default function App() {
             <Route path="/" element={<Navigate to="/doctor" replace />} />
             <Route path="*" element={<Navigate to="/doctor" replace />} />
           </Routes>
+
+          {/* Aviso e Instalación de PWA en Celular / PC */}
+          <PwaInstallPrompt />
 
           {/* Notificaciones globales */}
           <ToastContainer />

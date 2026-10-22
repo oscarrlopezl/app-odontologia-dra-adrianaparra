@@ -9,6 +9,7 @@ export const initialClinicSettings = {
   whatsapp_phone: '+58 412-1234567',
   address: 'Calle Bolívar c/c Sucre, Centro Médico Integral, Guacara / Yagua, Edo. Carabobo',
   usd_exchange_rate: 883.40,
+  doctor_pin: '1234',
   schedule: 'Lunes a Sábado: 8:00 AM - 5:00 PM',
   logo_url: '/logo-dra-adrianaparra.png',
 };
