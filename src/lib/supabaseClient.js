@@ -23,7 +23,7 @@ export const supabase = isConfigured
 
 export const doctorInfo = {
   name: import.meta.env.VITE_DOCTOR_NAME || 'Dra. Adriana Parra',
-  email: import.meta.env.VITE_DOCTOR_EMAIL || 'dra.adrianaparra@gmail.com',
+  email: import.meta.env.VITE_DOCTOR_EMAIL || 'Od.adrianaparra@gmail.com',
   clinicName: import.meta.env.VITE_CLINIC_NAME || 'Centro Odontológico Especializado Dra. Adriana Parra',
   phone: import.meta.env.VITE_CLINIC_PHONE || '+58 412-1234567',
   defaultExchangeRate: Number(import.meta.env.VITE_DEFAULT_EXCHANGE_RATE) || 40.0,

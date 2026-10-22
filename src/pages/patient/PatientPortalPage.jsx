@@ -118,17 +118,13 @@ export default function PatientPortalPage() {
         <header className="bg-gradient-to-r from-teal-700 to-teal-800 text-white p-5 rounded-b-3xl shadow-lg relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {settings.logo_url ? (
+              <div className="bg-white rounded-2xl p-1.5 shadow-md flex items-center justify-center">
                 <img
-                  src={settings.logo_url}
+                  src={settings.logo_url || "/logo-dra-adrianaparra.png"}
                   alt="Logo Consultorio"
-                  className="w-11 h-11 rounded-2xl object-contain bg-white/20 p-1 shadow-inner"
+                  className="max-h-10 w-auto object-contain"
                 />
-              ) : (
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-xl shadow-inner">
-                  🦷
-                </div>
-              )}
+              </div>
               <div>
                 <h1 className="font-extrabold text-sm tracking-tight">{settings.doctor_name}</h1>
                 <p className="text-[11px] text-teal-200">{settings.clinic_name || 'Portal Privado del Paciente'}</p>

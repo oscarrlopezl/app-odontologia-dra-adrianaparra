@@ -3,12 +3,13 @@
 export const initialClinicSettings = {
   doctor_name: 'Dra. Adriana Parra',
   doctor_specialty: 'Odontología Integral, Estética Dental y Rehabilitación Oral',
-  doctor_email: 'dra.adrianaparra@gmail.com',
+  doctor_email: 'Od.adrianaparra@gmail.com',
   clinic_name: 'Centro Odontológico Especializado Dra. Adriana Parra',
   phone: '+58 412-1234567',
   address: 'Calle Bolívar c/c Sucre, Centro Médico Integral, Guacara / Yagua, Edo. Carabobo',
   usd_exchange_rate: 40.00,
   schedule: 'Lunes a Sábado: 8:00 AM - 5:00 PM',
+  logo_url: '/logo-dra-adrianaparra.png',
 };
 
 export const initialPatients = [

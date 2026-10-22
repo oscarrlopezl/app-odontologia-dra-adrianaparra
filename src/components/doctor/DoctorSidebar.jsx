@@ -28,23 +28,13 @@ export default function DoctorSidebar() {
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 min-h-screen border-r border-slate-800">
       <div>
         {/* Logo y Branding del Consultorio */}
-        <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-          {settings.logo_url ? (
+        <div className="p-4 border-b border-slate-800">
+          <div className="bg-white rounded-2xl p-3 shadow-md flex flex-col items-center justify-center">
             <img
-              src={settings.logo_url}
-              alt="Logo"
-              className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 shadow-lg shadow-teal-500/20"
+              src={settings.logo_url || "/logo-dra-adrianaparra.png"}
+              alt="Dra. Adriana Parra - Odontología Especializada"
+              className="max-h-16 w-auto object-contain"
             />
-          ) : (
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-teal-400 flex items-center justify-center text-white text-xl shadow-lg shadow-teal-500/20">
-              🦷
-            </div>
-          )}
-          <div>
-            <h1 className="font-extrabold text-white text-sm leading-tight">
-              {settings.doctor_name || 'Dra. Adriana Parra'}
-            </h1>
-            <p className="text-[11px] text-teal-400 font-medium">Odontología Especializada</p>
           </div>
         </div>
 
