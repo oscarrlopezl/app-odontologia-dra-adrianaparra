@@ -1,6 +1,24 @@
 import React, { useState } from 'react';
 import { useDental } from '../../context/DentalContext';
-import { FileText, Stethoscope, Pill, Calendar, X, AlertCircle } from 'lucide-react';
+import { FileText, Stethoscope, Pill, Calendar, X, AlertCircle, Sparkles, Plus } from 'lucide-react';
+
+const COMMON_PRESCRIPTIONS = [
+  'Amoxicilina 500mg: 1 cápsula cada 8 horas por 7 días.',
+  'Amoxicilina + Ác. Clavulánico 875/125mg: 1 tableta cada 12 horas por 7 días.',
+  'Ibuprofeno 400mg: 1 tableta cada 8 horas por 3 días con las comidas.',
+  'Ketoprofeno 100mg: 1 cápsula cada 12 horas por 3 días si hay dolor moderado.',
+  'Dexketoprofeno 25mg: 1 sobre o comprimido cada 8 horas por 3 días.',
+  'Enjuague Bucal con Clorhexidina al 0.12%: Enjuagues de 30 segundos cada 12 horas por 7 días.',
+];
+
+const COMMON_INDICATIONS = [
+  'Dieta blanda y fría durante las primeras 24 horas.',
+  'No realizar esfuerzo físico ni levantar peso por 48 horas.',
+  'No escupir, no usar pitillos/pajillas, no enjuagarse con fuerza hoy.',
+  'Aplicar hielo local indirecto en la mejilla por 15 minutos cada hora.',
+  'Cepillado suave en la zona intervenida con técnica de Bass.',
+  'Evitar exposición directa al sol o al calor de la cocina.',
+];
 
 export default function ClinicalHistoryModal({ isOpen, onClose, patientId, patientName }) {
   const { addClinicalRecord } = useDental();
@@ -43,12 +61,26 @@ export default function ClinicalHistoryModal({ isOpen, onClose, patientId, patie
     onClose();
   };
 
+  const addPrescriptionPreset = (text) => {
+    setFormData((prev) => ({
+      ...prev,
+      prescriptions: prev.prescriptions ? `${prev.prescriptions}\n• ${text}` : `• ${text}`,
+    }));
+  };
+
+  const addIndicationPreset = (text) => {
+    setFormData((prev) => ({
+      ...prev,
+      indications: prev.indications ? `${prev.indications}\n• ${text}` : `• ${text}`,
+    }));
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8">
+      <div className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div>
-            <h3 className="text-xl font-extrabold text-slate-800">Nueva Nota de Evolución Clínica</h3>
+            <h3 className="text-xl font-extrabold text-slate-800">Nueva Consulta y Récipe Odontológico</h3>
             <p className="text-xs text-slate-700">Paciente: <strong className="text-teal-700">{patientName}</strong></p>
           </div>
           <button onClick={onClose} className="p-2 text-slate-600 hover:text-slate-600 rounded-xl">
@@ -106,67 +138,111 @@ export default function ClinicalHistoryModal({ isOpen, onClose, patientId, patie
 
           <div>
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-              Diagnóstico Clínico
+              Diagnóstico Clínico Odontológico
             </label>
             <input
               type="text"
               value={formData.diagnosis}
               onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-              placeholder="Ej: Pulpitis irreversible sintomática, Gingivitis, Caries oclusal..."
+              placeholder="Ej: Pulpitis irreversible sintomática, Gingivitis marginal, Caries oclusal profunda..."
               className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
 
           <div>
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-              Procedimiento Realizado *
+              Procedimiento Realizado en el Sillón *
             </label>
             <textarea
               rows={3}
               value={formData.procedure_performed}
               onChange={(e) => setFormData({ ...formData, procedure_performed: e.target.value })}
-              placeholder="Detalla minuciosamente el tratamiento: anestesia empleada, aislamiento, técnica, materiales y pulido..."
+              placeholder="Detalla minuciosamente el tratamiento: anestesia empleada, aislamiento absoluto/relativo, técnica, resina, sellador o endodoncia..."
               className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             ></textarea>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                Indicaciones al Paciente
+          {/* Sección de Récipe y Prescripción Médica */}
+          <div className="p-4 bg-teal-50/50 rounded-2xl border border-teal-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-extrabold text-teal-900 uppercase tracking-wider flex items-center gap-1.5">
+                <Pill className="w-4 h-4 text-teal-600" />
+                <span>Rp. / Receta Médica y Fármacos</span>
               </label>
-              <textarea
-                rows={2}
-                value={formData.indications}
-                onChange={(e) => setFormData({ ...formData, indications: e.target.value })}
-                placeholder="Dieta blanda, no masticar duro, técnica de cepillado..."
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-              ></textarea>
+              <span className="text-[11px] text-teal-700 font-semibold">
+                Haz clic en los medicamentos rápidos para añadirlos:
+              </span>
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                Receta Médica / Prescripciones
-              </label>
-              <textarea
-                rows={2}
-                value={formData.prescriptions}
-                onChange={(e) => setFormData({ ...formData, prescriptions: e.target.value })}
-                placeholder="Ej: Amoxicilina 500mg c/8h x 7 días, Ibuprofeno 400mg c/8h..."
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-              ></textarea>
+            {/* Chips de Medicamentos Dentales Habituales */}
+            <div className="flex flex-wrap gap-1.5">
+              {COMMON_PRESCRIPTIONS.map((presc, idx) => (
+                <button
+                  type="button"
+                  key={idx}
+                  onClick={() => addPrescriptionPreset(presc)}
+                  className="text-[11px] font-semibold bg-white text-slate-700 hover:text-teal-800 hover:bg-teal-100/70 border border-teal-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1 shadow-2xs"
+                >
+                  <Plus className="w-3 h-3 text-teal-600" />
+                  <span>{presc.split(':')[0]}</span>
+                </button>
+              ))}
             </div>
+
+            <textarea
+              rows={3}
+              value={formData.prescriptions}
+              onChange={(e) => setFormData({ ...formData, prescriptions: e.target.value })}
+              placeholder="Detalle de fármacos recetados, miligramos, frecuencia y días de tratamiento..."
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-teal-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
+            ></textarea>
+          </div>
+
+          {/* Indicaciones Post-Tratamiento */}
+          <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-600" />
+                <span>Indicaciones y Cuidados para el Paciente</span>
+              </label>
+              <span className="text-[11px] text-amber-700 font-semibold">
+                Cuidados rápidos:
+              </span>
+            </div>
+
+            {/* Chips de Indicaciones Habituales */}
+            <div className="flex flex-wrap gap-1.5">
+              {COMMON_INDICATIONS.map((ind, idx) => (
+                <button
+                  type="button"
+                  key={idx}
+                  onClick={() => addIndicationPreset(ind)}
+                  className="text-[11px] font-semibold bg-white text-slate-700 hover:text-amber-800 hover:bg-amber-100/70 border border-amber-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1 shadow-2xs"
+                >
+                  <Plus className="w-3 h-3 text-amber-600" />
+                  <span>{ind.split(' ')[0]} {ind.split(' ')[1]}...</span>
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              rows={2}
+              value={formData.indications}
+              onChange={(e) => setFormData({ ...formData, indications: e.target.value })}
+              placeholder="Instrucciones post-operatorias, cuidados de higiene, alimentos permitidos y prohibidos..."
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+            ></textarea>
           </div>
 
           <div>
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-              Notas Internas de la Dra. (Privadas)
+              Notas Internas de la Dra. Adriana (Privadas para el consultorio)
             </label>
             <input
               type="text"
               value={formData.doctor_notes}
               onChange={(e) => setFormData({ ...formData, doctor_notes: e.target.value })}
-              placeholder="Recordar probar tono A2 en la próxima sesión, evaluar selle..."
+              placeholder="Ej: Paciente toleró muy bien el procedimiento, evaluar en 15 días tono de esmalte..."
               className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
@@ -183,7 +259,7 @@ export default function ClinicalHistoryModal({ isOpen, onClose, patientId, patie
               type="submit"
               className="px-6 py-2.5 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-md transition"
             >
-              Guardar en Historia Clínica
+              Guardar Consulta y Récipe
             </button>
           </div>
         </form>

@@ -29,9 +29,17 @@ export default function DoctorSidebar() {
       <div>
         {/* Logo y Branding del Consultorio */}
         <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-teal-400 flex items-center justify-center text-white text-xl shadow-lg shadow-teal-500/20">
-            🦷
-          </div>
+          {settings.logo_url ? (
+            <img
+              src={settings.logo_url}
+              alt="Logo"
+              className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 shadow-lg shadow-teal-500/20"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-teal-400 flex items-center justify-center text-white text-xl shadow-lg shadow-teal-500/20">
+              🦷
+            </div>
+          )}
           <div>
             <h1 className="font-extrabold text-white text-sm leading-tight">
               {settings.doctor_name || 'Dra. Adriana Parra'}

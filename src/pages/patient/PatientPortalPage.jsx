@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDental } from '../../context/DentalContext';
+import PrescriptionModal from '../../components/common/PrescriptionModal';
 import {
   Calendar,
   CreditCard,
@@ -20,7 +21,9 @@ import {
   HelpCircle,
   LogOut,
   Landmark,
-  Smartphone
+  Smartphone,
+  Pill,
+  Printer
 } from 'lucide-react';
 
 export default function PatientPortalPage() {
@@ -42,6 +45,7 @@ export default function PatientPortalPage() {
   const [currentPatientId, setCurrentPatientId] = useState(activePatientId || patients[0]?.id || '');
   const [activeTab, setActiveTab] = useState('tratamiento'); // tratamiento, estado_cuenta, radiografias, agendar, promos
   const [selectedImageZoom, setSelectedImageZoom] = useState(null);
+  const [selectedPrescription, setSelectedPrescription] = useState(null);
 
   // Formulario de agendar cita desde la web
   const [bookingForm, setBookingForm] = useState({
@@ -67,7 +71,7 @@ export default function PatientPortalPage() {
   const totalBudgetUsd = mainBudget?.total_amount || 0;
   const balanceDueUsd = Math.max(0, totalBudgetUsd - totalPaidUsd);
 
-  // Historias clínicas del paciente
+  // Historias clínicas y recetas del paciente
   const patientRecords = clinicalRecords
     .filter((r) => r.patient_id === currentPatient?.id)
     .sort((a, b) => new Date(b.record_date) - new Date(a.record_date));
@@ -110,16 +114,24 @@ export default function PatientPortalPage() {
     <div className="min-h-screen bg-slate-100 flex justify-center selection:bg-teal-500 selection:text-white">
       {/* Contenedor tipo pantalla móvil / responsive */}
       <div className="w-full max-w-md bg-white min-h-screen flex flex-col shadow-2xl relative pb-20 border-x border-slate-200">
-        {/* Barra Superior de la Clínica */}
+        {/* Barra Superior de la Clínica con Soporte de Logo */}
         <header className="bg-gradient-to-r from-teal-700 to-teal-800 text-white p-5 rounded-b-3xl shadow-lg relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-xl shadow-inner">
-                🦷
-              </div>
+              {settings.logo_url ? (
+                <img
+                  src={settings.logo_url}
+                  alt="Logo Consultorio"
+                  className="w-11 h-11 rounded-2xl object-contain bg-white/20 p-1 shadow-inner"
+                />
+              ) : (
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-xl shadow-inner">
+                  🦷
+                </div>
+              )}
               <div>
                 <h1 className="font-extrabold text-sm tracking-tight">{settings.doctor_name}</h1>
-                <p className="text-[11px] text-teal-200">Portal Privado del Paciente</p>
+                <p className="text-[11px] text-teal-200">{settings.clinic_name || 'Portal Privado del Paciente'}</p>
               </div>
             </div>
 
@@ -233,30 +245,72 @@ export default function PatientPortalPage() {
                 })}
               </div>
 
-              {/* Historial de Procedimientos Realizados */}
+              {/* SECCIÓN CLAVE: LO QUE LA DOCTORA LE RECETÓ (HISTORIAL MÉDICO Y RÉCIPES) */}
               <div className="space-y-3 pt-2">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Lo que se te ha realizado en consulta
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Pill className="w-4 h-4 text-teal-600" />
+                    <span>Récipes e Indicaciones de la Dra.</span>
+                  </h4>
+                  <span className="text-[10px] text-teal-700 font-bold bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                    {patientRecords.filter(r => r.prescriptions).length} recetas
+                  </span>
+                </div>
 
                 {patientRecords.length === 0 ? (
-                  <p className="text-xs text-slate-700 italic">No hay registros de consultas pasadas.</p>
+                  <p className="text-xs text-slate-700 italic">No tienes recetas médicas emitidas aún.</p>
                 ) : (
                   patientRecords.map((rec) => (
-                    <div key={rec.id} className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">
-                          {rec.record_date}
-                        </span>
-                        {rec.diagnosis && (
-                          <span className="text-slate-600 font-semibold">{rec.diagnosis}</span>
-                        )}
+                    <div
+                      key={rec.id}
+                      className="p-4 bg-gradient-to-br from-teal-50/60 to-white rounded-2xl border border-teal-200 shadow-2xs space-y-3"
+                    >
+                      <div className="flex items-center justify-between border-b border-teal-100 pb-2">
+                        <div>
+                          <span className="text-xs font-bold text-teal-900 block">
+                            Consulta del {rec.record_date}
+                          </span>
+                          {rec.diagnosis && (
+                            <span className="text-[11px] text-teal-700 font-semibold">{rec.diagnosis}</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setSelectedPrescription(rec)}
+                          className="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-bold rounded-lg shadow-sm flex items-center gap-1 transition"
+                        >
+                          <Printer className="w-3 h-3" />
+                          <span>Ver Récipe</span>
+                        </button>
                       </div>
-                      <p className="text-xs text-slate-800 font-medium">{rec.procedure_performed}</p>
+
+                      {/* Procedimiento Realizado */}
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-700 uppercase block">Procedimiento:</span>
+                        <p className="text-xs text-slate-800 font-medium">{rec.procedure_performed}</p>
+                      </div>
+
+                      {/* Medicamentos Recetados (Rp) */}
+                      {rec.prescriptions && (
+                        <div className="p-3 bg-white rounded-xl border border-teal-100 shadow-2xs">
+                          <span className="text-[10px] font-extrabold text-teal-900 uppercase block mb-1 flex items-center gap-1">
+                            <span>💊 Medicamentos que debes tomar:</span>
+                          </span>
+                          <p className="text-xs text-slate-800 whitespace-pre-line font-mono font-medium leading-relaxed">
+                            {rec.prescriptions}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Cuidados e Indicaciones */}
                       {rec.indications && (
-                        <p className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg">
-                          💡 <strong>Indicación:</strong> {rec.indications}
-                        </p>
+                        <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200/80">
+                          <span className="text-[10px] font-bold text-amber-900 block mb-0.5">
+                            💡 Cuidados e Indicaciones de la Doctora:
+                          </span>
+                          <p className="text-xs text-amber-900 whitespace-pre-line">
+                            {rec.indications}
+                          </p>
+                        </div>
                       )}
                     </div>
                   ))
@@ -561,6 +615,14 @@ export default function PatientPortalPage() {
             );
           })}
         </nav>
+
+        {/* Modal de Récipe Odontológico para el Paciente */}
+        <PrescriptionModal
+          isOpen={Boolean(selectedPrescription)}
+          onClose={() => setSelectedPrescription(null)}
+          record={selectedPrescription}
+          patient={currentPatient}
+        />
 
         {/* Modal Zoom de Radiografía */}
         {selectedImageZoom && (

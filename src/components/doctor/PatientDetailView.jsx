@@ -6,6 +6,7 @@ import ClinicalHistoryModal from './ClinicalHistoryModal';
 import XrayUploaderModal from './XrayUploaderModal';
 import PaymentModal from './PaymentModal';
 import PatientFormModal from './PatientFormModal';
+import PrescriptionModal from '../common/PrescriptionModal';
 import {
   User,
   Phone,
@@ -24,6 +25,8 @@ import {
   ExternalLink,
   Receipt,
   Sparkles,
+  Printer,
+  Pill,
 } from 'lucide-react';
 
 export default function PatientDetailView({ patient }) {
@@ -42,6 +45,7 @@ export default function PatientDetailView({ patient }) {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedImageZoom, setSelectedImageZoom] = useState(null);
+  const [selectedPrescriptionRecord, setSelectedPrescriptionRecord] = useState(null);
 
   if (!patient) {
     return (
@@ -222,15 +226,15 @@ export default function PatientDetailView({ patient }) {
         <div className="space-y-4">
           <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-slate-200">
             <div>
-              <h4 className="font-extrabold text-slate-800 text-base">Evolución Clínica y Procedimientos</h4>
-              <p className="text-xs text-slate-700">Historial cronológico de consultas, diagnósticos y tratamientos realizados.</p>
+              <h4 className="font-extrabold text-slate-800 text-base">Evolución Clínica y Recetas</h4>
+              <p className="text-xs text-slate-700">Historial cronológico de consultas, diagnósticos, procedimientos y prescripción de fármacos.</p>
             </div>
             <button
               onClick={() => setShowHistoryModal(true)}
               className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md transition"
             >
               <Plus className="w-4 h-4" />
-              <span>Añadir Consulta / Evolución</span>
+              <span>Añadir Consulta / Récipe</span>
             </button>
           </div>
 
@@ -253,7 +257,18 @@ export default function PatientDetailView({ patient }) {
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] text-slate-700 font-medium">Por: {settings.doctor_name}</span>
+                  
+                  {/* Botón Imprimir Récipe de esta consulta */}
+                  {record.prescriptions && (
+                    <button
+                      onClick={() => setSelectedPrescriptionRecord(record)}
+                      className="flex items-center gap-1.5 px-3 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-lg border border-teal-200 transition"
+                      title="Ver e Imprimir Récipe Odontológico"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Imprimir Récipe</span>
+                    </button>
+                  )}
                 </div>
 
                 {record.reason && (
@@ -279,16 +294,19 @@ export default function PatientDetailView({ patient }) {
 
                 {(record.indications || record.prescriptions) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                    {record.indications && (
-                      <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 text-xs">
-                        <span className="font-bold text-amber-900 block mb-1">Indicaciones:</span>
-                        <p className="text-amber-800">{record.indications}</p>
+                    {record.prescriptions && (
+                      <div className="p-3 bg-teal-50/60 rounded-xl border border-teal-200/80 text-xs space-y-1">
+                        <span className="font-bold text-teal-900 flex items-center gap-1">
+                          <Pill className="w-3.5 h-3.5 text-teal-600" />
+                          <span>Medicamentos Recetados (Rp):</span>
+                        </span>
+                        <p className="text-slate-800 whitespace-pre-line font-mono text-[11px]">{record.prescriptions}</p>
                       </div>
                     )}
-                    {record.prescriptions && (
-                      <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/80 text-xs">
-                        <span className="font-bold text-blue-900 block mb-1">Prescripción / Receta:</span>
-                        <p className="text-blue-800">{record.prescriptions}</p>
+                    {record.indications && (
+                      <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 text-xs space-y-1">
+                        <span className="font-bold text-amber-900 block">Indicaciones al Paciente:</span>
+                        <p className="text-amber-800 whitespace-pre-line">{record.indications}</p>
                       </div>
                     )}
                   </div>
@@ -492,6 +510,14 @@ export default function PatientDetailView({ patient }) {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         patientToEdit={patient}
+      />
+
+      {/* Modal de Récipe Odontológico para Imprimir */}
+      <PrescriptionModal
+        isOpen={Boolean(selectedPrescriptionRecord)}
+        onClose={() => setSelectedPrescriptionRecord(null)}
+        record={selectedPrescriptionRecord}
+        patient={patient}
       />
 
       {/* Modal Zoom de Radiografía */}

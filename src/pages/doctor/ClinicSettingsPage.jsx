@@ -12,11 +12,14 @@ import {
   Save, 
   Database,
   ExternalLink,
-  Plus
+  Plus,
+  Upload,
+  Image as ImageIcon,
+  Trash2
 } from 'lucide-react';
 
 export default function ClinicSettingsPage() {
-  const { settings, updateSettings, promotions, addPromotion, connectedToSupabase } = useDental();
+  const { settings, updateSettings, promotions, addPromotion, connectedToSupabase, showToast } = useDental();
 
   const [formSettings, setFormSettings] = useState({
     doctor_name: settings?.doctor_name || 'Dra. Adriana Parra',
@@ -27,6 +30,7 @@ export default function ClinicSettingsPage() {
     address: settings?.address || 'Guacara / Yagua, Edo. Carabobo',
     usd_exchange_rate: settings?.usd_exchange_rate || 40.0,
     schedule: settings?.schedule || 'Lunes a Sábado: 8:00 AM - 5:00 PM',
+    logo_url: settings?.logo_url || '',
   });
 
   const [newPromo, setNewPromo] = useState({
@@ -41,6 +45,31 @@ export default function ClinicSettingsPage() {
       ...formSettings,
       usd_exchange_rate: Number(formSettings.usd_exchange_rate),
     });
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        showToast('Por favor selecciona una imagen válida (PNG, JPG, SVG)', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const logoDataUrl = reader.result;
+        setFormSettings((prev) => ({ ...prev, logo_url: logoDataUrl }));
+        updateSettings({ logo_url: logoDataUrl });
+        showToast('¡Logo de la Dra. Adriana Parra cargado exitosamente!');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setFormSettings((prev) => ({ ...prev, logo_url: '' }));
+    updateSettings({ logo_url: '' });
+    showToast('Logo removido. Se usará el ícono dental estándar.');
   };
 
   const handleAddPromotion = (e) => {
@@ -59,7 +88,7 @@ export default function ClinicSettingsPage() {
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50 min-h-screen">
       <DoctorHeader
         title="Ajustes del Consultorio y Configuración"
-        subtitle="Datos de contacto de la Dra. Adriana Parra, tasa oficial del día y promociones para pacientes"
+        subtitle="Datos de contacto de la Dra. Adriana Parra, logotipo, tasa del día y promociones"
       />
 
       <div className="flex-1 p-6 md:p-8 space-y-6 max-w-5xl w-full mx-auto">
@@ -88,6 +117,69 @@ export default function ClinicSettingsPage() {
             <div className="bg-white/10 p-3 rounded-2xl border border-white/10 text-xs">
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Correo Titular:</span>
               <span className="font-mono text-teal-300 font-bold">{formSettings.doctor_email}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* GESTIÓN DEL LOGOTIPO DE LA DOCTORA */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-teal-600" />
+                <span>Logotipo Oficial del Consultorio</span>
+              </h4>
+              <p className="text-xs text-slate-700 mt-0.5">
+                Este logo se mostrará en el menú lateral, en el portal del paciente y en los récipes médicos impresos.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+            {/* Visualizador del Logo actual */}
+            <div className="w-24 h-24 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+              {formSettings.logo_url ? (
+                <img
+                  src={formSettings.logo_url}
+                  alt="Logo Doctora"
+                  className="w-full h-full object-contain p-2"
+                />
+              ) : (
+                <div className="text-center p-2">
+                  <span className="text-3xl block">🦷</span>
+                  <span className="text-[9px] text-slate-600 font-semibold block mt-1">Sin logo</span>
+                </div>
+              )}
+            </div>
+
+            {/* Controles de Carga */}
+            <div className="flex-1 space-y-2">
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-teal-600/20 cursor-pointer transition">
+                  <Upload className="w-4 h-4" />
+                  <span>{formSettings.logo_url ? 'Cambiar Logotipo' : 'Subir Logotipo de la Doctora'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                </label>
+
+                {formSettings.logo_url && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold border border-rose-200 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Eliminar</span>
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-700">
+                Formato recomendado: PNG transparente o JPG (máximo 2MB). Cuando lo tengas, dale al botón verde y se actualiza al instante.
+              </p>
             </div>
           </div>
         </div>
