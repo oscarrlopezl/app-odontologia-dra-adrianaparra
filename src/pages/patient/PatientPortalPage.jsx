@@ -23,7 +23,8 @@ import {
   Landmark,
   Smartphone,
   Pill,
-  Printer
+  Printer,
+  WifiOff
 } from 'lucide-react';
 
 export default function PatientPortalPage() {
@@ -39,6 +40,7 @@ export default function PatientPortalPage() {
     addAppointment,
     settings,
     showToast,
+    isOnline,
   } = useDental();
 
   // Paciente logueado (por defecto toma el primero o el activo, con selector para demo)
@@ -169,6 +171,14 @@ export default function PatientPortalPage() {
             </select>
           </div>
         </header>
+
+        {/* Banner de Modo Offline Seguro */}
+        {!isOnline && (
+          <div className="bg-amber-600 text-white text-[10px] font-bold py-1.5 px-4 text-center flex items-center justify-center gap-1.5 shadow-xs">
+            <WifiOff className="w-3.5 h-3.5" />
+            <span>Sin internet • Visualizando datos guardados localmente en tu teléfono</span>
+          </div>
+        )}
 
         {/* Contenido Principal según Pestaña */}
         <main className="flex-1 p-5 space-y-5">
