@@ -1,0 +1,25 @@
+name: Render Keep-Alive Heartbeat
+
+on:
+  schedule:
+    # Corre cada 14 minutos para evitar que el plan gratuito de Render se suspenda (límite de 15 min)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub
+
+jobs:
+  ping-render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Service
+        env:
+          # Puedes configurar RENDER_APP_URL en los Secrets/Variables de GitHub o toma el valor por defecto
+          RENDER_APP_URL: ${{ secrets.RENDER_APP_URL || 'https://app-odontologia-dra-adrianaparra.onrender.com' }}
+        run: |
+          echo "💓 Enviando señal de pulso a $RENDER_APP_URL..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$RENDER_APP_URL/api/health" || echo "000")
+          echo "Respuesta HTTP: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "✅ Servicio activo y respondiendo correctamente."
+          else
+            echo "⚠️ Aviso: El servicio respondió con $HTTP_STATUS o está iniciando."
+          fi
