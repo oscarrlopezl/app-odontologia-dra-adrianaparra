@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: app-odontologia-dra-adrianaparra
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: VITE_SUPABASE_URL
+        value: https://pqchasrzglktlpipgqfo.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY
+        value: sb_publishable_4aGX4N0pZaw2c3d7l3NLXA_36B1dskR
+      - key: VITE_DOCTOR_EMAIL
+        value: Od.adrianaparra@gmail.com
+      - key: NODE_ENV
+        value: production
