@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useDental } from '../../context/DentalContext';
-import { User, Phone, Mail, IdCard, AlertTriangle, HeartPulse, X } from 'lucide-react';
+import { User, Phone, Mail, IdCard, AlertTriangle, HeartPulse, X, Camera, Upload, Trash2 } from 'lucide-react';
 
 export default function PatientFormModal({ isOpen, onClose, patientToEdit = null }) {
   const { addPatient, updatePatient } = useDental();
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
+    photo_url: patientToEdit?.photo_url || '',
     full_name: patientToEdit?.full_name || '',
     document_id: patientToEdit?.document_id || '',
     phone: patientToEdit?.phone || '',
@@ -55,6 +57,27 @@ export default function PatientFormModal({ isOpen, onClose, patientToEdit = null
     onClose();
   };
 
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La foto supera los 5MB. Por favor selecciona una imagen más ligera.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData((prev) => ({ ...prev, photo_url: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setFormData((prev) => ({ ...prev, photo_url: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8">
@@ -71,6 +94,59 @@ export default function PatientFormModal({ isOpen, onClose, patientToEdit = null
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {/* FOTO DE PERFIL DEL PACIENTE */}
+          <div className="flex items-center gap-4 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+            <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 flex items-center justify-center shrink-0 border-2 border-white shadow-xs">
+              {formData.photo_url ? (
+                <img
+                  src={formData.photo_url}
+                  alt="Foto del Paciente"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-8 h-8 text-slate-400" />
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <label className="text-xs font-bold text-slate-800 block mb-0.5">
+                Foto de Perfil del Paciente (Opcional)
+              </label>
+              <p className="text-[11px] text-slate-700 mb-2 truncate">
+                Permite reconocer al paciente de inmediato en su ficha y en el portal.
+              </p>
+
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                  id="patient-photo-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-2xs transition"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>{formData.photo_url ? 'Cambiar Foto' : 'Subir Foto'}</span>
+                </button>
+
+                {formData.photo_url && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Quitar</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">

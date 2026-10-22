@@ -134,22 +134,30 @@ export default function PatientPortalPage() {
             </div>
 
             <a
-              href={`https://wa.me/${settings.phone?.replace(/\D/g, '')}?text=Hola%20Dra.%20Adriana,%20le%20escribo%20desde%20su%20portal%20web`}
+              href={`https://wa.me/${(settings.whatsapp_phone || settings.phone)?.replace(/\D/g, '')}?text=Hola%20Dra.%20Adriana%2C%20le%20escribo%20desde%20el%20portal%20de%20pacientes%20de%20parte%20de%20${encodeURIComponent(currentPatient?.full_name || 'Paciente')}`}
               target="_blank"
               rel="noreferrer"
-              className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-xl shadow-md transition flex items-center gap-1 text-[11px] font-bold"
-              title="Escribir al WhatsApp"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 text-xs font-bold"
+              title="Escribir al WhatsApp de la Dra. Adriana Parra"
             >
               <Phone className="w-3.5 h-3.5" />
-              <span>WhatsApp</span>
+              <span>WhatsApp Dra.</span>
             </a>
           </div>
 
           {/* Tarjeta del Paciente Activo */}
           <div className="mt-4 p-3.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white text-teal-800 font-extrabold text-xs flex items-center justify-center shadow-xs">
-                {currentPatient?.full_name?.slice(0, 2).toUpperCase()}
+              <div className="w-10 h-10 rounded-xl bg-white text-teal-800 font-extrabold text-xs flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+                {currentPatient?.photo_url ? (
+                  <img
+                    src={currentPatient.photo_url}
+                    alt={currentPatient.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  currentPatient?.full_name?.slice(0, 2).toUpperCase()
+                )}
               </div>
               <div>
                 <h2 className="font-bold text-xs leading-tight">{currentPatient?.full_name}</h2>
@@ -551,6 +559,21 @@ export default function PatientPortalPage() {
                     <Send className="w-3.5 h-3.5" />
                     <span>Enviar Solicitud de Cita</span>
                   </button>
+
+                  <div className="relative flex items-center justify-center my-3">
+                    <div className="border-t border-slate-200 w-full"></div>
+                    <span className="bg-white px-2.5 text-[10px] text-slate-700 font-bold uppercase tracking-wider absolute">O por WhatsApp directo</span>
+                  </div>
+
+                  <a
+                    href={`https://wa.me/${(settings.whatsapp_phone || settings.phone)?.replace(/\D/g, '')}?text=Hola%20Dra.%20Adriana%2C%20quisiera%20agendar%20una%20cita%20odontol%C3%B3gica%20a%20nombre%20de%20${encodeURIComponent(currentPatient?.full_name || 'Paciente')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Escribir al WhatsApp de la Dra. Adriana</span>
+                  </a>
                 </form>
               )}
             </div>
@@ -655,6 +678,18 @@ export default function PatientPortalPage() {
             </div>
           </div>
         )}
+
+        {/* Botón Flotante de WhatsApp para Pacientes */}
+        <a
+          href={`https://wa.me/${(settings.whatsapp_phone || settings.phone)?.replace(/\D/g, '')}?text=Hola%20Dra.%20Adriana%2C%20le%20escribo%20desde%20su%20portal%20odontol%C3%B3gico%20de%20parte%20de%20${encodeURIComponent(currentPatient?.full_name || 'Paciente')}`}
+          target="_blank"
+          rel="noreferrer"
+          className="fixed bottom-20 right-4 sm:right-6 z-40 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-full shadow-lg shadow-emerald-500/30 flex items-center gap-2 transition-all hover:scale-105 border-2 border-white"
+          title="Escribir por WhatsApp a la Dra. Adriana Parra"
+        >
+          <Phone className="w-4 h-4" />
+          <span className="text-xs font-extrabold tracking-tight">WhatsApp Dra.</span>
+        </a>
       </div>
     </div>
   );

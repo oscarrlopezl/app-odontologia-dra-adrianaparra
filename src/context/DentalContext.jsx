@@ -534,6 +534,52 @@ export const DentalProvider = ({ children }) => {
     showToast('📁 Respaldo completo descargado a tu computador.');
   };
 
+  // VACIAR DATOS DE PRUEBA / EMPEZAR CONSULTORIO EN BLANCO
+  // Borra pacientes ficticios, citas, presupuestos y odontogramas de demostración
+  // manteniendo la configuración del consultorio (nombre, logo, WhatsApp, tasa BCV).
+  const clearAllDemoData = async () => {
+    // 1. Limpiar estados en memoria
+    setPatients([]);
+    setActivePatientId(null);
+    setOdontograms({});
+    setClinicalRecords([]);
+    setRadiographs([]);
+    setBudgets([]);
+    setPayments([]);
+    setAppointments([]);
+    setCashEntries([]);
+    setSyncQueue([]);
+
+    // 2. Limpiar almacenamiento local
+    saveLocal('patients', []);
+    saveLocal('odontograms', {});
+    saveLocal('clinicalRecords', []);
+    saveLocal('radiographs', []);
+    saveLocal('budgets', []);
+    saveLocal('payments', []);
+    saveLocal('appointments', []);
+    saveLocal('cashEntries', []);
+    saveLocal('sync_queue', []);
+
+    // 3. Limpiar Supabase en la nube si está conectado
+    if (isConfigured && supabase) {
+      try {
+        await supabase.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('cash_register_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('appointments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('radiographs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('clinical_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('odontograms').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('treatment_budgets').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('patients').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      } catch (err) {
+        console.warn('Aviso al limpiar Supabase:', err.message);
+      }
+    }
+
+    showToast('✨ Base de datos reiniciada. Lista para registrar tus pacientes reales.', 'success');
+  };
+
   // Cálculos financieros por paciente
   const getPatientFinancials = (patientId) => {
     const patientBudgets = budgets.filter((b) => b.patient_id === patientId);
@@ -597,6 +643,8 @@ export const DentalProvider = ({ children }) => {
     bcvInfo,
     isUpdatingBcv,
     syncBcvRate,
+    // Gestión y limpieza de datos
+    clearAllDemoData,
   };
 
   return <DentalContext.Provider value={value}>{children}</DentalContext.Provider>;

@@ -86,8 +86,12 @@ export default function PatientDetailView({ patient }) {
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-teal-600 to-teal-400 text-white font-extrabold text-xl flex items-center justify-center shadow-md shadow-teal-500/20">
-              {patient.full_name?.slice(0, 2).toUpperCase()}
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-teal-600 to-teal-400 text-white font-extrabold text-xl flex items-center justify-center shadow-md shadow-teal-500/20 overflow-hidden shrink-0">
+              {patient.photo_url ? (
+                <img src={patient.photo_url} alt={patient.full_name} className="w-full h-full object-cover" />
+              ) : (
+                patient.full_name?.slice(0, 2).toUpperCase()
+              )}
             </div>
 
             <div>

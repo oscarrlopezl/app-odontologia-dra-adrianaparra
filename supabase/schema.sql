@@ -20,22 +20,24 @@ CREATE TABLE IF NOT EXISTS clinic_settings (
     doctor_email TEXT DEFAULT 'Od.adrianaparra@gmail.com',
     clinic_name TEXT NOT NULL DEFAULT 'Centro Odontológico Especializado Dra. Adriana Parra',
     phone TEXT DEFAULT '+58 412-1234567',
+    whatsapp_phone TEXT DEFAULT '+58 412-1234567',
     address TEXT DEFAULT 'Guacara / Yagua, Estado Carabobo, Venezuela',
-    usd_exchange_rate NUMERIC(10, 2) DEFAULT 40.00, -- Tasa oficial de cambio USD/Bs
+    usd_exchange_rate NUMERIC(10, 2) DEFAULT 883.40, -- Tasa oficial de cambio USD/Bs
     logo_url TEXT DEFAULT '/logo-dra-adrianaparra.png',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Insertar configuración inicial por defecto
-INSERT INTO clinic_settings (doctor_name, doctor_specialty, doctor_email, clinic_name, phone, address, usd_exchange_rate, logo_url)
-VALUES ('Dra. Adriana Parra', 'Odontólogo General y Estética Dental', 'Od.adrianaparra@gmail.com', 'Centro Odontológico Especializado Dra. Adriana Parra', '+58 412-1234567', 'Guacara / Yagua, Edo. Carabobo', 40.00, '/logo-dra-adrianaparra.png')
+INSERT INTO clinic_settings (doctor_name, doctor_specialty, doctor_email, clinic_name, phone, whatsapp_phone, address, usd_exchange_rate, logo_url)
+VALUES ('Dra. Adriana Parra', 'Odontólogo General y Estética Dental', 'Od.adrianaparra@gmail.com', 'Centro Odontológico Especializado Dra. Adriana Parra', '+58 412-1234567', '+58 412-1234567', 'Guacara / Yagua, Edo. Carabobo', 883.40, '/logo-dra-adrianaparra.png')
 ON CONFLICT DO NOTHING;
 
 -- 2. TABLA: PACIENTES
 CREATE TABLE IF NOT EXISTS patients (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     full_name TEXT NOT NULL,
+    photo_url TEXT, -- Fotografía o avatar de perfil del paciente
     document_id TEXT NOT NULL UNIQUE, -- Cédula de Identidad venezolana (V-12345678)
     birth_date DATE,
     phone TEXT NOT NULL,

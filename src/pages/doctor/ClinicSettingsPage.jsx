@@ -16,7 +16,11 @@ import {
   Upload,
   Image as ImageIcon,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  MessageSquare,
+  AlertTriangle,
+  CheckCircle2,
+  X
 } from 'lucide-react';
 
 export default function ClinicSettingsPage() {
@@ -29,8 +33,12 @@ export default function ClinicSettingsPage() {
     showToast,
     bcvInfo,
     isUpdatingBcv,
-    syncBcvRate
+    syncBcvRate,
+    clearAllDemoData
   } = useDental();
+
+  const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const [formSettings, setFormSettings] = useState({
     doctor_name: settings?.doctor_name || 'Dra. Adriana Parra',
@@ -38,8 +46,9 @@ export default function ClinicSettingsPage() {
     doctor_email: settings?.doctor_email || 'dra.adrianaparra@gmail.com',
     clinic_name: settings?.clinic_name || 'Centro Odontológico Especializado Dra. Adriana Parra',
     phone: settings?.phone || '+58 412-1234567',
+    whatsapp_phone: settings?.whatsapp_phone || settings?.phone || '+58 412-1234567',
     address: settings?.address || 'Guacara / Yagua, Edo. Carabobo',
-    usd_exchange_rate: settings?.usd_exchange_rate || 40.0,
+    usd_exchange_rate: settings?.usd_exchange_rate || 883.40,
     schedule: settings?.schedule || 'Lunes a Sábado: 8:00 AM - 5:00 PM',
     logo_url: settings?.logo_url || '',
   });
@@ -244,15 +253,44 @@ export default function ClinicSettingsPage() {
 
               <div>
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                  Teléfono / WhatsApp de Atención *
+                  Teléfono Fijo / Consultorio
                 </label>
                 <input
                   type="text"
                   value={formSettings.phone}
                   onChange={(e) => setFormSettings({ ...formSettings, phone: e.target.value })}
+                  placeholder="Ej: 0245-1234567"
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 font-semibold"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-emerald-800 uppercase tracking-wider block mb-1">
+                  WhatsApp Oficial de la Doctora *
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.whatsapp_phone}
+                  onChange={(e) => setFormSettings({ ...formSettings, whatsapp_phone: e.target.value })}
+                  placeholder="Ej: +58 412 1234567 o 04121234567"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-emerald-300 bg-emerald-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-emerald-950"
+                  required
+                />
+                <div className="mt-1 flex items-center justify-between">
+                  <p className="text-[10px] text-slate-700">Enlace directo para pacientes en el portal.</p>
+                  {formSettings.whatsapp_phone && (
+                    <a
+                      href={`https://wa.me/${formSettings.whatsapp_phone.replace(/\D/g, '')}?text=Hola%20Dra.%20Adriana%2C%20le%20escribo%20desde%20su%20portal%20odontol%C3%B3gico`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>Probar enlace WhatsApp</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -395,7 +433,80 @@ export default function ClinicSettingsPage() {
             </button>
           </form>
         </div>
+
+        {/* Zona de Gestión y Puesta en Marcha (Empezar desde Cero) */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-rose-200/90 shadow-2xs space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="max-w-xl">
+              <h4 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+                <span>Base de Datos: Iniciar Consultorio en Blanco</span>
+              </h4>
+              <p className="text-xs text-slate-700 mt-1 leading-relaxed">
+                ¿Ya probaste la aplicación y deseas comenzar con tus pacientes reales?
+                Este botón vacía todos los pacientes, presupuestos, pagos y citas de prueba tanto de la memoria local como de la nube Supabase.
+                Tu configuración, logo oficial, WhatsApp y tasa de cambio se mantendrán intactos.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowClearConfirmModal(true)}
+              className="inline-flex items-center gap-2 px-5 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-2xl text-xs font-bold transition shadow-2xs hover:shadow-sm"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Vaciar Pacientes de Prueba y Empezar en Blanco</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Modal de Confirmación para Vaciar Pacientes de Prueba */}
+      {showClearConfirmModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-rose-100 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-extrabold text-slate-900">
+                ¿Vaciar datos de prueba y empezar desde cero?
+              </h3>
+              <p className="text-xs text-slate-700 leading-relaxed">
+                Se eliminarán los pacientes ficticios (Carlos Méndez, Valentina Rivas, etc.), sus odontogramas e historiales de muestra. 
+                <br /><br />
+                Tu consultorio quedará completamente en blanco y listo para ingresar tus pacientes reales.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowClearConfirmModal(false)}
+                disabled={isClearing}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isClearing}
+                onClick={async () => {
+                  setIsClearing(true);
+                  await clearAllDemoData();
+                  setIsClearing(false);
+                  setShowClearConfirmModal(false);
+                }}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-rose-600/20 flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isClearing ? 'Vaciando...' : 'Sí, vaciar y empezar'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
