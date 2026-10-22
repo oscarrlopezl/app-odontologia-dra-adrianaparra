@@ -21,7 +21,10 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
     pendingSyncCount, 
     syncPendingQueue, 
     lastSyncTime,
-    exportLocalBackup 
+    exportLocalBackup,
+    bcvInfo,
+    isUpdatingBcv,
+    syncBcvRate,
   } = useDental();
 
   const exchangeRate = Number(settings?.usd_exchange_rate) || 40.0;
@@ -89,13 +92,25 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
             </button>
           </div>
 
-          {/* Tasa del Día USD / Bs */}
-          <div className="flex items-center gap-2 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-xl shadow-2xs">
-            <DollarSign className="w-4 h-4 text-teal-700" />
+          {/* Tasa Oficial BCV USD / Bs Automática */}
+          <div 
+            className="flex items-center gap-2 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/80 px-3 py-1.5 rounded-xl shadow-2xs"
+            title={`Fuente: ${bcvInfo?.source || 'BCV Oficial'} | Fecha: ${bcvInfo?.date || 'Hoy'}. Sincronización automática activa cada 30 min.`}
+          >
+            <span className="text-sm select-none">🇻🇪</span>
             <div className="text-xs">
-              <span className="text-slate-700 font-medium">Tasa: </span>
-              <span className="font-extrabold text-teal-900">1 USD = {exchangeRate.toFixed(2)} Bs</span>
+              <span className="text-slate-600 font-medium">Tasa BCV: </span>
+              <span className="font-extrabold text-teal-950">1 USD = {exchangeRate.toFixed(2)} Bs</span>
             </div>
+
+            <button
+              onClick={() => syncBcvRate(true)}
+              disabled={isUpdatingBcv}
+              className="ml-1 p-1 text-teal-700 hover:text-teal-900 hover:bg-teal-100 rounded-lg transition"
+              title="Haz clic para consultar y actualizar la tasa oficial del BCV ahora mismo"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isUpdatingBcv ? 'animate-spin text-teal-600' : ''}`} />
+            </button>
           </div>
 
           {actionButton}

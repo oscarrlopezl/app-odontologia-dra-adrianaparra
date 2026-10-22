@@ -12,6 +12,7 @@ import {
   initialCashEntries,
   initialPromotions,
 } from '../lib/mockData';
+import { fetchOfficialBcvRate, getCachedBcvRate } from '../lib/bcvRateService';
 
 const DentalContext = createContext();
 
@@ -65,12 +66,65 @@ export const DentalProvider = ({ children }) => {
   const [connectedToSupabase, setConnectedToSupabase] = useState(isConfigured);
   const [lastSyncTime, setLastSyncTime] = useState(() => loadLocal('last_sync_time', null));
 
+  // Estados y Sincronización Automática de Tasa BCV Oficial
+  const [bcvInfo, setBcvInfo] = useState(() => getCachedBcvRate() || {
+    rate: Number(settings?.usd_exchange_rate) || 883.40,
+    source: 'BCV Oficial',
+    date: null,
+  });
+  const [isUpdatingBcv, setIsUpdatingBcv] = useState(false);
+
   const showToast = (message, type = 'success') => {
     setToast({ id: Date.now(), message, type });
     setTimeout(() => {
       setToast(null);
     }, 4500);
   };
+
+  // Función para obtener y sincronizar la tasa del BCV en vivo
+  const syncBcvRate = useCallback(async (showNotification = false) => {
+    setIsUpdatingBcv(true);
+    try {
+      const res = await fetchOfficialBcvRate();
+      if (res && res.rate) {
+        setBcvInfo(res);
+        setSettings((prev) => {
+          const updated = {
+            ...prev,
+            usd_exchange_rate: res.rate,
+            bcv_last_update: res.date,
+            bcv_source: res.source,
+          };
+          saveLocal('settings', updated);
+          return updated;
+        });
+
+        if (showNotification) {
+          showToast(`🇻🇪 Tasa oficial BCV actualizada: 1 USD = ${res.rate.toFixed(2)} Bs (${res.source})`, 'success');
+        }
+      }
+    } catch (err) {
+      console.warn('Error al sincronizar tasa BCV:', err);
+      if (showNotification) {
+        showToast('No se pudo conectar con el BCV. Se mantiene la última tasa en memoria.', 'warning');
+      }
+    } finally {
+      setIsUpdatingBcv(false);
+    }
+  }, []);
+
+  // Auto-actualizar tasa BCV al iniciar la app y cada 30 minutos
+  useEffect(() => {
+    syncBcvRate(false);
+
+    const bcvInterval = setInterval(() => {
+      if (navigator.onLine) {
+        syncBcvRate(false);
+      }
+    }, 30 * 60 * 1000);
+
+    return () => clearInterval(bcvInterval);
+  }, [syncBcvRate]);
 
   // 1. Guardado local inmediato e hiper-seguro en cada cambio
   useEffect(() => { saveLocal('settings', settings); }, [settings]);
@@ -90,8 +144,9 @@ export const DentalProvider = ({ children }) => {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      showToast('⚡ ¡Conexión a internet restaurada! Sincronizando con la nube...', 'info');
+      showToast('⚡ ¡Conexión restaurada! Sincronizando con la nube y tasa BCV...', 'info');
       syncPendingQueue();
+      syncBcvRate(false);
     };
 
     const handleOffline = () => {
@@ -538,6 +593,10 @@ export const DentalProvider = ({ children }) => {
     toast,
     showToast,
     doctorInfo,
+    // Tasa BCV Oficial en vivo
+    bcvInfo,
+    isUpdatingBcv,
+    syncBcvRate,
   };
 
   return <DentalContext.Provider value={value}>{children}</DentalContext.Provider>;

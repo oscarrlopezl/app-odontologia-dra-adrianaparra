@@ -15,11 +15,22 @@ import {
   Plus,
   Upload,
   Image as ImageIcon,
-  Trash2
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 
 export default function ClinicSettingsPage() {
-  const { settings, updateSettings, promotions, addPromotion, connectedToSupabase, showToast } = useDental();
+  const { 
+    settings, 
+    updateSettings, 
+    promotions, 
+    addPromotion, 
+    connectedToSupabase, 
+    showToast,
+    bcvInfo,
+    isUpdatingBcv,
+    syncBcvRate
+  } = useDental();
 
   const [formSettings, setFormSettings] = useState({
     doctor_name: settings?.doctor_name || 'Dra. Adriana Parra',
@@ -259,6 +270,25 @@ export default function ClinicSettingsPage() {
                     className="w-full pl-9 pr-4 py-2.5 text-sm font-extrabold text-teal-900 rounded-xl border border-teal-300 bg-teal-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-700">
+                    Fuente: {bcvInfo?.source || 'BCV Oficial'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await syncBcvRate(true);
+                      if (bcvInfo?.rate) {
+                        setFormSettings((prev) => ({ ...prev, usd_exchange_rate: bcvInfo.rate }));
+                      }
+                    }}
+                    disabled={isUpdatingBcv}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-100 hover:bg-teal-200 text-teal-900 rounded-lg text-[11px] font-bold transition border border-teal-300"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isUpdatingBcv ? 'animate-spin' : ''}`} />
+                    <span>Actualizar con BCV</span>
+                  </button>
                 </div>
               </div>
 

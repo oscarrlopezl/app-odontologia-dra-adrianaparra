@@ -371,7 +371,7 @@ export default function PatientPortalPage() {
                   </div>
                   <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-teal-100">
                     <span className="font-semibold">📱 Pago Móvil</span>
-                    <span className="text-teal-700 font-mono font-bold">Tasa: {exchangeRate.toFixed(2)} Bs</span>
+                    <span className="text-teal-700 font-mono font-bold">Tasa Oficial BCV: {exchangeRate.toFixed(2)} Bs</span>
                   </div>
                   <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-teal-100">
                     <span className="font-semibold">🏦 Zelle</span>
