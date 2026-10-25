@@ -1,21 +1,23 @@
-import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useDental } from '../../context/DentalContext';
+import WhatsAppModal from './WhatsAppModal';
 import {
   Users,
   Calendar,
   CreditCard,
   DollarSign,
   Settings,
-  Sparkles,
-  ExternalLink,
   Activity,
   HeartPulse,
   Lock,
+  MessageSquare,
 } from 'lucide-react';
 
 export default function DoctorSidebar() {
-  const { settings, connectedToSupabase, logoutDoctor } = useDental();
+  const { settings, connectedToSupabase, logoutDoctor, patients, activePatient } = useDental();
+  const [showGlobalWhatsappModal, setShowGlobalWhatsappModal] = useState(false);
+  const [targetPatient, setTargetPatient] = useState(null);
 
   const navItems = [
     { to: '/doctor', label: 'Pacientes y Fichas', icon: Users, exact: true },
@@ -84,24 +86,53 @@ export default function DoctorSidebar() {
         </nav>
       </div>
 
-      {/* Acceso Directo al Portal del Paciente */}
+      {/* Centro de Mensajería WhatsApp para Pacientes */}
       <div className="p-4 border-t border-slate-800 space-y-3">
-        <div className="p-3 bg-gradient-to-br from-teal-950/60 to-slate-800 rounded-xl border border-teal-800/40">
-          <div className="flex items-center gap-2 text-teal-300 text-xs font-bold mb-1">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Portal del Paciente</span>
+        <div className="p-3.5 bg-gradient-to-br from-emerald-950/70 to-slate-800 rounded-2xl border border-emerald-700/40 shadow-xs">
+          <div className="flex items-center justify-between gap-1 mb-1.5">
+            <div className="flex items-center gap-1.5 text-emerald-300 text-xs font-extrabold">
+              <span className="text-sm">💬</span>
+              <span>WhatsApp Pacientes</span>
+            </div>
+            <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase">
+              Directo
+            </span>
           </div>
-          <p className="text-[11px] text-slate-400 mb-2">
-            Vista responsive diseñada para el teléfono del paciente.
+          <p className="text-[11px] text-slate-300 mb-2.5 leading-tight">
+            Envía citas, cuidados y presupuestos directo al WhatsApp del paciente.
           </p>
-          <Link
-            to="/portal"
-            target="_blank"
-            className="flex items-center justify-center gap-1.5 w-full py-1.5 text-xs font-bold text-teal-300 bg-teal-900/50 hover:bg-teal-800/60 rounded-lg border border-teal-700/50 transition"
+
+          {/* Selector de paciente si desea elegir uno específico */}
+          {patients.length > 0 && (
+            <select
+              value={targetPatient?.id || activePatient?.id || ''}
+              onChange={(e) => {
+                const found = patients.find((p) => p.id === e.target.value);
+                setTargetPatient(found);
+              }}
+              className="w-full mb-2 bg-slate-900 border border-emerald-700/50 rounded-xl px-2.5 py-1.5 text-[11px] text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-400"
+            >
+              {patients.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name} ({p.phone})
+                </option>
+              ))}
+            </select>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!targetPatient && (activePatient || patients[0])) {
+                setTargetPatient(activePatient || patients[0]);
+              }
+              setShowGlobalWhatsappModal(true);
+            }}
+            className="flex items-center justify-center gap-2 w-full py-2 text-xs font-extrabold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition shadow-md shadow-emerald-500/20"
           >
-            <span>Abrir Portal Móvil</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Redactar WhatsApp</span>
+          </button>
         </div>
 
         {/* Bloquear Panel de la Doctora */}
@@ -119,6 +150,16 @@ export default function DoctorSidebar() {
           Desarrollado para Guacara / Yagua 🇻🇪
         </div>
       </div>
+
+      {/* Modal Global de WhatsApp */}
+      {(targetPatient || activePatient || patients[0]) && (
+        <WhatsAppModal
+          isOpen={showGlobalWhatsappModal}
+          onClose={() => setShowGlobalWhatsappModal(false)}
+          patient={targetPatient || activePatient || patients[0]}
+          initialTab="cita"
+        />
+      )}
     </aside>
   );
 }

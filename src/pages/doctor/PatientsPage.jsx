@@ -3,12 +3,15 @@ import { useDental } from '../../context/DentalContext';
 import DoctorHeader from '../../components/doctor/DoctorHeader';
 import PatientDetailView from '../../components/doctor/PatientDetailView';
 import PatientFormModal from '../../components/doctor/PatientFormModal';
-import { Search, Plus, User, Phone, AlertTriangle, ChevronRight } from 'lucide-react';
+import WhatsAppModal from '../../components/doctor/WhatsAppModal';
+import { Search, Plus, User, Phone, AlertTriangle, ChevronRight, MessageSquare } from 'lucide-react';
 
 export default function PatientsPage() {
   const { patients, activePatientId, setActivePatientId, activePatient } = useDental();
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
+  const [showQuickWhatsapp, setShowQuickWhatsapp] = useState(false);
+  const [quickWhatsappPatient, setQuickWhatsappPatient] = useState(null);
 
   const filteredPatients = patients.filter((p) => {
     const term = searchTerm.toLowerCase();
@@ -122,11 +125,27 @@ export default function PatientsPage() {
                       </div>
                     </div>
 
-                    <ChevronRight
-                      className={`w-4 h-4 shrink-0 transition ${
-                        isSelected ? 'text-teal-600 translate-x-0.5' : 'text-slate-300'
-                      }`}
-                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePatientId(pat.id);
+                          setQuickWhatsappPatient(pat);
+                          setShowQuickWhatsapp(true);
+                        }}
+                        className="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition"
+                        title="Enviar mensaje por WhatsApp a este paciente"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </button>
+
+                      <ChevronRight
+                        className={`w-4 h-4 transition ${
+                          isSelected ? 'text-teal-600 translate-x-0.5' : 'text-slate-300'
+                        }`}
+                      />
+                    </div>
                   </div>
                 );
               })
@@ -143,6 +162,17 @@ export default function PatientsPage() {
       <PatientFormModal
         isOpen={showNewPatientModal}
         onClose={() => setShowNewPatientModal(false)}
+      />
+
+      {/* Modal de WhatsApp Rápido */}
+      <WhatsAppModal
+        isOpen={showQuickWhatsapp}
+        onClose={() => {
+          setShowQuickWhatsapp(false);
+          setQuickWhatsappPatient(null);
+        }}
+        patient={quickWhatsappPatient || activePatient}
+        initialTab="cita"
       />
     </div>
   );

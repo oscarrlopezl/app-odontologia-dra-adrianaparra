@@ -53,6 +53,10 @@ export default function ClinicSettingsPage() {
     usd_exchange_rate: settings?.usd_exchange_rate || 883.40,
     schedule: settings?.schedule || 'Lunes a Sábado: 8:00 AM - 5:00 PM',
     logo_url: settings?.logo_url || '',
+    pago_movil_banco: settings?.pago_movil_banco || 'Banesco',
+    pago_movil_telefono: settings?.pago_movil_telefono || settings?.whatsapp_phone || '+58 412-1234567',
+    pago_movil_cedula: settings?.pago_movil_cedula || 'V-12345678',
+    zelle_email: settings?.zelle_email || '',
   });
 
   const [newPromo, setNewPromo] = useState({
@@ -375,6 +379,52 @@ export default function ClinicSettingsPage() {
                 onChange={(e) => setFormSettings({ ...formSettings, address: e.target.value })}
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
+            </div>
+
+            {/* Datos para Pago Móvil / WhatsApp */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <h5 className="font-bold text-slate-800 text-xs flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-emerald-600" />
+                <span>Datos Bancarios y Pago Móvil (Se incluyen automáticamente al enviar presupuestos por WhatsApp)</span>
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                    Banco de Pago Móvil
+                  </label>
+                  <input
+                    type="text"
+                    value={formSettings.pago_movil_banco || ''}
+                    onChange={(e) => setFormSettings({ ...formSettings, pago_movil_banco: e.target.value })}
+                    placeholder="Ej: Banesco / Banco de Venezuela"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                    Teléfono Pago Móvil
+                  </label>
+                  <input
+                    type="text"
+                    value={formSettings.pago_movil_telefono || ''}
+                    onChange={(e) => setFormSettings({ ...formSettings, pago_movil_telefono: e.target.value })}
+                    placeholder="Ej: 0412-1234567"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                    Cédula / RIF del Titular
+                  </label>
+                  <input
+                    type="text"
+                    value={formSettings.pago_movil_cedula || ''}
+                    onChange={(e) => setFormSettings({ ...formSettings, pago_movil_cedula: e.target.value })}
+                    placeholder="Ej: V-12345678"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center justify-end pt-4 border-t border-slate-100">

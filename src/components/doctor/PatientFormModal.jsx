@@ -18,6 +18,7 @@ export default function PatientFormModal({ isOpen, onClose, patientToEdit = null
     emergency_contact_phone: patientToEdit?.emergency_contact_phone || '',
     medical_conditions: patientToEdit?.medical_conditions?.join(', ') || '',
     notes: patientToEdit?.notes || '',
+    occupation: patientToEdit?.occupation || '',
     access_code: patientToEdit?.access_code || '',
   });
 
@@ -223,13 +224,13 @@ export default function PatientFormModal({ isOpen, onClose, patientToEdit = null
 
             <div>
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                Código Clave Portal Paciente
+                Ocupación / Profesión
               </label>
               <input
                 type="text"
-                value={formData.access_code}
-                onChange={(e) => setFormData({ ...formData, access_code: e.target.value })}
-                placeholder="Últimos 4 dígitos de cédula"
+                value={formData.occupation || ''}
+                onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                placeholder="Ej: Docente, Comerciante, Estudiante..."
                 className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>

@@ -10,10 +10,11 @@ import {
   FileCheck,
   ChevronDown,
   ChevronUp,
-  Receipt
+  Receipt,
+  MessageSquare
 } from 'lucide-react';
 
-export default function BudgetPhaseManager({ patientId, onOpenPaymentModal }) {
+export default function BudgetPhaseManager({ patientId, onOpenPaymentModal, onOpenWhatsAppBudget }) {
   const { budgets, addBudget, toggleBudgetItem, payments, settings } = useDental();
   const [showNewBudgetModal, setShowNewBudgetModal] = useState(false);
   const [newBudgetTitle, setNewBudgetTitle] = useState('Plan Integral de Rehabilitación Bucal');
@@ -168,10 +169,22 @@ export default function BudgetPhaseManager({ patientId, onOpenPaymentModal }) {
                     <span className="text-base font-extrabold text-rose-700">${balancePending.toFixed(2)}</span>
                   </div>
 
+                  {onOpenWhatsAppBudget && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenWhatsAppBudget(budget)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition"
+                      title="Enviar presupuesto y saldo por WhatsApp"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </button>
+                  )}
+
                   {onOpenPaymentModal && (
                     <button
                       onClick={() => onOpenPaymentModal(budget.id)}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm flex items-center gap-1.5"
+                      className="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm flex items-center gap-1.5"
                     >
                       <DollarSign className="w-3.5 h-3.5" />
                       <span>Registrar Abono</span>

@@ -69,8 +69,8 @@ export default function PwaInstallPrompt() {
               <Smartphone className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs font-bold text-white truncate">¿Instalar App en tu Teléfono / PC?</h4>
-              <p className="text-[11px] text-teal-200 truncate">Acceso rápido desde tu pantalla de inicio</p>
+              <h4 className="text-xs font-bold text-white truncate">¿Instalar App del Consultorio en tu Teléfono / PC?</h4>
+              <p className="text-[11px] text-teal-200 truncate">Acceso directo al panel clínico de la Dra. Adriana Parra</p>
             </div>
           </div>
 

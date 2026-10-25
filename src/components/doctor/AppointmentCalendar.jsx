@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDental } from '../../context/DentalContext';
+import WhatsAppModal from './WhatsAppModal';
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -11,7 +12,8 @@ import {
   XCircle, 
   Sparkles,
   Filter,
-  X
+  X,
+  MessageSquare,
 } from 'lucide-react';
 
 const TREATMENT_DURATIONS = [
@@ -30,6 +32,24 @@ export default function AppointmentCalendar() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [statusFilter, setStatusFilter] = useState('todos');
   const [showNewAptModal, setShowNewAptModal] = useState(false);
+  const [showWhatsappModal, setShowWhatsappModal] = useState(false);
+  const [whatsappApt, setWhatsappApt] = useState(null);
+  const [whatsappPatient, setWhatsappPatient] = useState(null);
+  const [sendWhatsappOnSave, setSendWhatsappOnSave] = useState(true);
+
+  const handleOpenWhatsApp = (apt) => {
+    let pat = patients.find((p) => p.id === apt.patient_id || p.full_name?.toLowerCase() === apt.patient_name?.toLowerCase());
+    if (!pat) {
+      pat = {
+        id: apt.patient_id || `temp-${Date.now()}`,
+        full_name: apt.patient_name,
+        phone: apt.patient_phone,
+      };
+    }
+    setWhatsappPatient(pat);
+    setWhatsappApt(apt);
+    setShowWhatsappModal(true);
+  };
 
   // Formulario de nueva cita
   const [formData, setFormData] = useState({
@@ -78,13 +98,18 @@ export default function AppointmentCalendar() {
     e.preventDefault();
     if (!formData.patient_name.trim() || !formData.patient_phone.trim()) return;
 
-    addAppointment({
+    const newApt = {
       ...formData,
       status: 'programada',
       is_online_request: false,
-    });
+    };
 
+    addAppointment(newApt);
     setShowNewAptModal(false);
+
+    if (sendWhatsappOnSave) {
+      handleOpenWhatsApp(newApt);
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -197,8 +222,18 @@ export default function AppointmentCalendar() {
                   </div>
                 </div>
 
-                {/* Acciones de Estado del Sillón */}
-                <div className="flex items-center gap-2">
+                {/* Acciones de Estado del Sillón y WhatsApp */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenWhatsApp(apt)}
+                    className="px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+                    title="Enviar recordatorio de esta cita por WhatsApp al paciente"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>WhatsApp Recordatorio</span>
+                  </button>
+
                   {apt.status === 'programada' && (
                     <button
                       onClick={() => updateAppointmentStatus(apt.id, 'confirmada')}
@@ -378,6 +413,19 @@ export default function AppointmentCalendar() {
                 ></textarea>
               </div>
 
+              {/* Checkbox para enviar WhatsApp de una vez */}
+              <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl">
+                <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-emerald-950">
+                  <input
+                    type="checkbox"
+                    checked={sendWhatsappOnSave}
+                    onChange={(e) => setSendWhatsappOnSave(e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>Enviar recordatorio por WhatsApp al guardar</span>
+                </label>
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
@@ -397,6 +445,19 @@ export default function AppointmentCalendar() {
           </div>
         </div>
       )}
+
+      {/* Modal de Mensajería WhatsApp */}
+      <WhatsAppModal
+        isOpen={showWhatsappModal}
+        onClose={() => {
+          setShowWhatsappModal(false);
+          setWhatsappApt(null);
+          setWhatsappPatient(null);
+        }}
+        patient={whatsappPatient}
+        appointment={whatsappApt}
+        initialTab="cita"
+      />
     </div>
   );
 }

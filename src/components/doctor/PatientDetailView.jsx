@@ -7,6 +7,7 @@ import XrayUploaderModal from './XrayUploaderModal';
 import PaymentModal from './PaymentModal';
 import PatientFormModal from './PatientFormModal';
 import PrescriptionModal from '../common/PrescriptionModal';
+import WhatsAppModal from './WhatsAppModal';
 import {
   User,
   Phone,
@@ -27,7 +28,8 @@ import {
   Sparkles,
   Printer,
   Pill,
-  KeyRound,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
 
 export default function PatientDetailView({ patient }) {
@@ -47,6 +49,10 @@ export default function PatientDetailView({ patient }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedImageZoom, setSelectedImageZoom] = useState(null);
   const [selectedPrescriptionRecord, setSelectedPrescriptionRecord] = useState(null);
+  const [showWhatsappModal, setShowWhatsappModal] = useState(false);
+  const [whatsappInitialTab, setWhatsappInitialTab] = useState('cita');
+  const [selectedConsultationForWhatsapp, setSelectedConsultationForWhatsapp] = useState(null);
+  const [selectedBudgetForWhatsapp, setSelectedBudgetForWhatsapp] = useState(null);
 
   if (!patient) {
     return (
@@ -128,10 +134,18 @@ export default function PatientDetailView({ patient }) {
                   </span>
                 )}
 
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-teal-50 text-teal-800 border border-teal-200 font-mono font-bold text-xs" title="Clave de acceso al portal privado del paciente">
-                  <KeyRound className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Clave Portal: {patient.access_code || patient.document_id?.replace(/\D/g, '').slice(-4) || '1234'}</span>
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWhatsappInitialTab('libre');
+                    setShowWhatsappModal(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-bold text-xs transition shadow-2xs"
+                  title="Escribir mensaje directo al WhatsApp del paciente"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>WhatsApp Directo</span>
+                </button>
               </div>
 
               {/* Badges de Condiciones Médicas */}
@@ -174,8 +188,21 @@ export default function PatientDetailView({ patient }) {
 
             <div className="flex items-center gap-2">
               <button
+                type="button"
+                onClick={() => {
+                  setWhatsappInitialTab('cita');
+                  setShowWhatsappModal(true);
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition"
+                title="Enviar recordatorio de cita, cuidados post-tratamiento o presupuesto por WhatsApp"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Enviar WhatsApp</span>
+              </button>
+
+              <button
                 onClick={() => setShowPaymentModal(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition"
+                className="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition"
               >
                 <DollarSign className="w-4 h-4" />
                 <span>Abonar</span>
@@ -268,17 +295,51 @@ export default function PatientDetailView({ patient }) {
                     )}
                   </div>
                   
-                  {/* Botón Imprimir Récipe de esta consulta */}
-                  {record.prescriptions && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Botón Cuidados Post-Tratamiento por WhatsApp */}
                     <button
-                      onClick={() => setSelectedPrescriptionRecord(record)}
-                      className="flex items-center gap-1.5 px-3 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-lg border border-teal-200 transition"
-                      title="Ver e Imprimir Récipe Odontológico"
+                      type="button"
+                      onClick={() => {
+                        setSelectedConsultationForWhatsapp(record);
+                        setWhatsappInitialTab('cuidados');
+                        setShowWhatsappModal(true);
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold rounded-lg border border-rose-200 transition"
+                      title="Enviar Cuidados e Indicaciones por WhatsApp"
                     >
-                      <Printer className="w-3.5 h-3.5" />
-                      <span>Imprimir Récipe</span>
+                      <HeartPulse className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Cuidados WhatsApp</span>
                     </button>
-                  )}
+
+                    {/* Botón Récipe de esta consulta */}
+                    {record.prescriptions && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedConsultationForWhatsapp(record);
+                            setWhatsappInitialTab('recipe');
+                            setShowWhatsappModal(true);
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-bold rounded-lg border border-purple-200 transition"
+                          title="Enviar Récipe e Indicaciones por WhatsApp"
+                        >
+                          <Pill className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Récipe WhatsApp</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPrescriptionRecord(record)}
+                          className="flex items-center gap-1.5 px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-lg border border-teal-200 transition"
+                          title="Ver e Imprimir Récipe Odontológico"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          <span>Imprimir</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {record.reason && (
@@ -390,6 +451,11 @@ export default function PatientDetailView({ patient }) {
           <BudgetPhaseManager
             patientId={patient.id}
             onOpenPaymentModal={() => setShowPaymentModal(true)}
+            onOpenWhatsAppBudget={(b) => {
+              setSelectedBudgetForWhatsapp(b);
+              setWhatsappInitialTab('presupuesto');
+              setShowWhatsappModal(true);
+            }}
           />
 
           {/* Historial de Pagos y Abonos Registrados */}
@@ -528,6 +594,20 @@ export default function PatientDetailView({ patient }) {
         onClose={() => setSelectedPrescriptionRecord(null)}
         record={selectedPrescriptionRecord}
         patient={patient}
+      />
+
+      {/* Modal de Mensajería WhatsApp Inteligente */}
+      <WhatsAppModal
+        isOpen={showWhatsappModal}
+        onClose={() => {
+          setShowWhatsappModal(false);
+          setSelectedConsultationForWhatsapp(null);
+          setSelectedBudgetForWhatsapp(null);
+        }}
+        patient={patient}
+        budget={selectedBudgetForWhatsapp}
+        consultationRecord={selectedConsultationForWhatsapp}
+        initialTab={whatsappInitialTab}
       />
 
       {/* Modal Zoom de Radiografía */}

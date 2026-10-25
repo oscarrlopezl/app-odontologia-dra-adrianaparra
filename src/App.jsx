@@ -110,10 +110,8 @@ export default function App() {
               }
             />
 
-            {/* Ruta del Portal del Paciente (Responsive / Móvil) */}
-            <Route path="/portal" element={<PatientPortalPage />} />
-
-            {/* Redirección por defecto */}
+            {/* Redirección directa al Panel de la Doctora (App Exclusiva para la Doctora) */}
+            <Route path="/portal" element={<Navigate to="/doctor" replace />} />
             <Route path="/" element={<Navigate to="/doctor" replace />} />
             <Route path="*" element={<Navigate to="/doctor" replace />} />
           </Routes>
