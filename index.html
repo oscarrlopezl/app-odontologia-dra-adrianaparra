@@ -31,10 +31,11 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      // Registro del Service Worker para PWA
+      // Registro del Service Worker para PWA con detección inmediata de actualizaciones
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').then((reg) => {
+            reg.update();
             console.log('PWA ServiceWorker registrado con éxito:', reg.scope);
           }).catch((err) => {
             console.log('Fallo al registrar PWA ServiceWorker:', err);

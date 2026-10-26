@@ -627,18 +627,21 @@ export default function PatientDetailView({ patient }) {
       />
 
       {/* Modal de Mensajería WhatsApp Inteligente */}
-      <WhatsAppModal
-        isOpen={showWhatsappModal}
-        onClose={() => {
-          setShowWhatsappModal(false);
-          setSelectedConsultationForWhatsapp(null);
-          setSelectedBudgetForWhatsapp(null);
-        }}
-        patient={patient}
-        budget={selectedBudgetForWhatsapp}
-        consultationRecord={selectedConsultationForWhatsapp}
-        initialTab={whatsappInitialTab}
-      />
+      {/* Modal de WhatsApp para Paciente */}
+      {showWhatsappModal && patient && (
+        <WhatsAppModal
+          isOpen={showWhatsappModal}
+          onClose={() => {
+            setShowWhatsappModal(false);
+            setSelectedConsultationForWhatsapp(null);
+            setSelectedBudgetForWhatsapp(null);
+          }}
+          patient={patient}
+          budget={selectedBudgetForWhatsapp}
+          consultationRecord={selectedConsultationForWhatsapp}
+          initialTab={whatsappInitialTab}
+        />
+      )}
 
       {/* Modal Zoom de Radiografía */}
       {selectedImageZoom && (

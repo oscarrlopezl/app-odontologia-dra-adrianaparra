@@ -14,8 +14,9 @@ export default function PatientsPage() {
   const [quickWhatsappPatient, setQuickWhatsappPatient] = useState(null);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
-  const filteredPatients = patients.filter((p) => {
-    const term = searchTerm.toLowerCase();
+  const filteredPatients = (patients || []).filter((p) => {
+    if (!p) return false;
+    const term = (searchTerm || '').toLowerCase();
     const nameMatch = p.full_name?.toLowerCase().includes(term);
     const idMatch = p.document_id?.toLowerCase().includes(term);
     const phoneMatch = p.phone?.includes(term);
@@ -189,16 +190,18 @@ export default function PatientsPage() {
         onClose={() => setShowNewPatientModal(false)}
       />
 
-      {/* Modal de WhatsApp Rápido */}
-      <WhatsAppModal
-        isOpen={showQuickWhatsapp}
-        onClose={() => {
-          setShowQuickWhatsapp(false);
-          setQuickWhatsappPatient(null);
-        }}
-        patient={quickWhatsappPatient || activePatient}
-        initialTab="cita"
-      />
+      {/* Modal de WhatsApp Rápido (Solo montado cuando se abre) */}
+      {showQuickWhatsapp && (quickWhatsappPatient || activePatient) && (
+        <WhatsAppModal
+          isOpen={showQuickWhatsapp}
+          onClose={() => {
+            setShowQuickWhatsapp(false);
+            setQuickWhatsappPatient(null);
+          }}
+          patient={quickWhatsappPatient || activePatient}
+          initialTab="cita"
+        />
+      )}
     </div>
   );
 }

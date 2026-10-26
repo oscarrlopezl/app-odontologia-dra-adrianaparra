@@ -59,95 +59,110 @@ export default function WhatsAppModal({
 
   // Inicializar teléfono y cita cuando abre el modal o cambia el paciente
   useEffect(() => {
-    if (patient) {
-      setRecipientPhone(patient.phone || '');
-      
-      // Buscar última cita o próxima cita si no vino por prop
-      if (!appointment) {
-        const patientApts = appointments
-          .filter((a) => a.patient_id === patient.id || a.patient_name === patient.full_name)
-          .sort((a, b) => b.appointment_date.localeCompare(a.appointment_date));
-        if (patientApts.length > 0) {
-          setSelectedAppointment(patientApts[0]);
-        }
-      } else {
-        setSelectedAppointment(appointment);
-      }
+    if (!isOpen || !patient) return;
 
-      // Buscar presupuesto si no vino por prop
-      if (!budget) {
-        const pBudgets = budgets.filter((b) => b.patient_id === patient.id);
-        if (pBudgets.length > 0) {
-          setSelectedBudget(pBudgets[0]);
-        }
+    setRecipientPhone(patient.phone || appointment?.patient_phone || '');
+    
+    // Buscar última cita o próxima cita si no vino por prop
+    if (!appointment) {
+      const safeApts = Array.isArray(appointments) ? appointments : [];
+      const patientApts = safeApts
+        .filter((a) => a && (a.patient_id === patient.id || a.patient_name === patient.full_name))
+        .sort((a, b) => String(b?.appointment_date || '').localeCompare(String(a?.appointment_date || '')));
+      if (patientApts.length > 0) {
+        setSelectedAppointment(patientApts[0]);
       } else {
-        setSelectedBudget(budget);
+        setSelectedAppointment(null);
       }
+    } else {
+      setSelectedAppointment(appointment);
+    }
+
+    // Buscar presupuesto si no vino por prop
+    if (!budget) {
+      const safeBudgets = Array.isArray(budgets) ? budgets : [];
+      const pBudgets = safeBudgets.filter((b) => b && b.patient_id === patient.id);
+      if (pBudgets.length > 0) {
+        setSelectedBudget(pBudgets[0]);
+      } else {
+        setSelectedBudget(null);
+      }
+    } else {
+      setSelectedBudget(budget);
     }
     setActiveTab(initialTab);
-  }, [patient, appointment, budget, initialTab, isOpen]);
+  }, [patient, appointment, budget, initialTab, isOpen, appointments, budgets]);
 
   // Actualizar el texto según la pestaña activa
   useEffect(() => {
     if (!isOpen || !patient) return;
 
-    if (activeTab === 'cita') {
-      const text = getAppointmentReminderText({
-        patient,
-        appointment: selectedAppointment,
-        settings,
-      });
-      setMessageText(text);
-    } else if (activeTab === 'cuidados') {
-      const text = getPostTreatmentCareText({
-        patient,
-        careType,
-        customNotes: customCareNotes,
-        settings,
-      });
-      setMessageText(text);
-    } else if (activeTab === 'presupuesto') {
-      const financials = getPatientFinancials(patient.id);
-      const text = getBudgetReminderText({
-        patient,
-        budget: selectedBudget,
-        financials,
-        settings,
-      });
-      setMessageText(text);
-    } else if (activeTab === 'recipe') {
-      const text = getPrescriptionText({
-        patient,
-        record: consultationRecord,
-        settings,
-      });
-      setMessageText(text);
-    } else if (activeTab === 'informe') {
-      const recordToUse = consultationRecord || clinicalRecords.filter((r) => r.patient_id === patient.id)[0];
-      const text = getConsultationReportText({
-        patient,
-        record: recordToUse,
-        settings,
-      });
-      setMessageText(text);
-    } else if (activeTab === 'constancia') {
-      const recordToUse = consultationRecord || clinicalRecords.filter((r) => r.patient_id === patient.id)[0];
-      const text = getMedicalJustificationText({
-        patient,
-        record: recordToUse,
-        daysOff,
-        settings,
-      });
-      setMessageText(text);
-    } else if (activeTab === 'libre') {
-      const text = getCustomMessageText({
-        patient,
-        messageText: '',
-        settings,
-      });
-      setMessageText(text);
+    try {
+      if (activeTab === 'cita') {
+        const text = getAppointmentReminderText({
+          patient,
+          appointment: selectedAppointment,
+          settings,
+        });
+        setMessageText(text);
+      } else if (activeTab === 'cuidados') {
+        const text = getPostTreatmentCareText({
+          patient,
+          careType,
+          customNotes: customCareNotes,
+          settings,
+        });
+        setMessageText(text);
+      } else if (activeTab === 'presupuesto') {
+        const financials = (patient.id && typeof getPatientFinancials === 'function')
+          ? getPatientFinancials(patient.id)
+          : { totalBudget: 0, totalPaid: 0, balanceDue: 0 };
+        const text = getBudgetReminderText({
+          patient,
+          budget: selectedBudget,
+          financials,
+          settings,
+        });
+        setMessageText(text);
+      } else if (activeTab === 'recipe') {
+        const text = getPrescriptionText({
+          patient,
+          record: consultationRecord,
+          settings,
+        });
+        setMessageText(text);
+      } else if (activeTab === 'informe') {
+        const safeRecords = Array.isArray(clinicalRecords) ? clinicalRecords : [];
+        const recordToUse = consultationRecord || safeRecords.find((r) => r && r.patient_id === patient.id);
+        const text = getConsultationReportText({
+          patient,
+          record: recordToUse,
+          settings,
+        });
+        setMessageText(text);
+      } else if (activeTab === 'constancia') {
+        const safeRecords = Array.isArray(clinicalRecords) ? clinicalRecords : [];
+        const recordToUse = consultationRecord || safeRecords.find((r) => r && r.patient_id === patient.id);
+        const text = getMedicalJustificationText({
+          patient,
+          record: recordToUse,
+          daysOff,
+          settings,
+        });
+        setMessageText(text);
+      } else if (activeTab === 'libre') {
+        const text = getCustomMessageText({
+          patient,
+          messageText: '',
+          settings,
+        });
+        setMessageText(text);
+      }
+    } catch (err) {
+      console.warn('Error generando plantilla de WhatsApp:', err);
+      setMessageText(`🦷 Hola ${patient?.full_name || 'Paciente'}, le escribe el consultorio de la Dra. Adriana Parra.`);
     }
-  }, [activeTab, careType, customCareNotes, daysOff, selectedAppointment, selectedBudget, consultationRecord, patient, settings, isOpen]);
+  }, [activeTab, careType, customCareNotes, daysOff, selectedAppointment, selectedBudget, consultationRecord, patient, settings, isOpen, clinicalRecords]);
 
   if (!isOpen || !patient) return null;
 

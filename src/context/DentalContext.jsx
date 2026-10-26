@@ -481,7 +481,7 @@ export const DentalProvider = ({ children }) => {
 
   // PAGOS Y ABONOS (Con impacto en caja y doble guardado)
   const registerPayment = async (paymentData) => {
-    const rate = Number(settings.usd_exchange_rate) || 40.0;
+    const rate = Number(settings?.usd_exchange_rate) || 883.40;
     const amountUsd = Number(paymentData.amount_usd) || 0;
     const amountBs = paymentData.amount_bs ? Number(paymentData.amount_bs) : amountUsd * rate;
 
@@ -544,7 +544,7 @@ export const DentalProvider = ({ children }) => {
 
   // CUADRE DE CAJA (Egresos e Ingresos con Doble Guardado)
   const addCashEntry = async (entryData) => {
-    const rate = Number(settings.usd_exchange_rate) || 40.0;
+    const rate = Number(settings?.usd_exchange_rate) || 883.40;
     const amountUsd = Number(entryData.amount_usd) || 0;
     const amountBs = entryData.amount_bs ? Number(entryData.amount_bs) : amountUsd * rate;
 
@@ -578,16 +578,17 @@ export const DentalProvider = ({ children }) => {
   const updateSettings = async (newSettings) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
     showToast('Ajustes guardados.');
-    await pushToCloud('clinic_settings', 'upsert', [{ id: settings.id || undefined, ...newSettings }]);
+    await pushToCloud('clinic_settings', 'upsert', [{ id: settings?.id || undefined, ...newSettings }]);
   };
 
   // EXPORTAR RESPALDO DE SEGURIDAD EN 1 CLIC (.JSON)
   // Permite a la doctora guardar una copia en su pendrive o disco duro
   const exportLocalBackup = () => {
+    const doctorName = settings?.doctor_name || 'Dra_Adriana_Parra';
     const backupData = {
       version: '1.0',
       exported_at: new Date().toISOString(),
-      doctor: settings.doctor_name,
+      doctor: doctorName,
       settings,
       patients,
       odontograms,
@@ -604,7 +605,7 @@ export const DentalProvider = ({ children }) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `RESPALDO_ODONTOLOGIA_${settings.doctor_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `RESPALDO_ODONTOLOGIA_${doctorName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

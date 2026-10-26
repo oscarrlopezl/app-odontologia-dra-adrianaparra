@@ -16,8 +16,8 @@ import {
 export default function OfflineSyncAuthorizationBanner() {
   const {
     isOnline,
-    syncQueue,
-    pendingSyncCount,
+    syncQueue = [],
+    pendingSyncCount = 0,
     authorizeAndUploadPendingChanges,
     isSyncing,
     lastSyncTime,
@@ -26,8 +26,11 @@ export default function OfflineSyncAuthorizationBanner() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [dismissedUntilNewItem, setDismissedUntilNewItem] = useState(false);
 
+  const safeSyncQueue = Array.isArray(syncQueue) ? syncQueue : [];
+  const count = Number(pendingSyncCount) || safeSyncQueue.length;
+
   // Si estamos online y no hay nada pendiente en cola, no estorbar
-  if (isOnline && pendingSyncCount === 0) {
+  if (isOnline && count === 0) {
     return null;
   }
 
@@ -135,7 +138,7 @@ export default function OfflineSyncAuthorizationBanner() {
 
             {/* Lista de cambios en cola */}
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              {syncQueue.map((item, idx) => (
+              {safeSyncQueue.map((item, idx) => (
                 <div
                   key={item.id || idx}
                   className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-3"

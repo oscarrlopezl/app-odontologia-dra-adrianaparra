@@ -42,14 +42,14 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
         <div className="p-4 border-b border-slate-800">
           <div className="bg-white rounded-2xl p-3 shadow-md flex flex-col items-center justify-center">
             <img
-              src={settings.logo_url || "/logo-dra-adrianaparra.png"}
+              src={settings?.logo_url || "/logo-dra-adrianaparra.png"}
               alt="Dra. Adriana Parra - Odontología Especializada"
               className="max-h-16 w-auto object-contain"
             />
           </div>
           <div className="text-center mt-2.5">
             <h3 className="font-extrabold text-white text-xs tracking-tight">
-              {settings.doctor_name || 'Dra. Adriana Parra'}
+              {settings?.doctor_name || 'Dra. Adriana Parra'}
             </h3>
             <p className="text-[10px] text-teal-400 font-semibold truncate">
               Odontología Especializada
@@ -126,16 +126,16 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
           </p>
 
           {/* Selector de paciente si desea elegir uno específico */}
-          {patients.length > 0 && (
+          {(patients || []).length > 0 && (
             <select
               value={targetPatient?.id || activePatient?.id || ''}
               onChange={(e) => {
-                const found = patients.find((p) => p.id === e.target.value);
+                const found = (patients || []).find((p) => p.id === e.target.value);
                 setTargetPatient(found);
               }}
               className="w-full mb-2 bg-slate-900 border border-emerald-700/50 rounded-xl px-2.5 py-1.5 text-[11px] text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-400"
             >
-              {patients.map((p) => (
+              {(patients || []).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.full_name} ({p.phone})
                 </option>
@@ -146,8 +146,8 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
           <button
             type="button"
             onClick={() => {
-              if (!targetPatient && (activePatient || patients[0])) {
-                setTargetPatient(activePatient || patients[0]);
+              if (!targetPatient && (activePatient || patients?.[0])) {
+                setTargetPatient(activePatient || patients?.[0]);
               }
               setShowGlobalWhatsappModal(true);
             }}
@@ -177,12 +177,12 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
         </div>
       </div>
 
-      {/* Modal Global de WhatsApp */}
-      {(targetPatient || activePatient || patients[0]) && (
+      {/* Modal Global de WhatsApp (Se monta únicamente al abrirse para evitar errores de renderizado de fondo) */}
+      {showGlobalWhatsappModal && (targetPatient || activePatient || patients?.[0]) && (
         <WhatsAppModal
           isOpen={showGlobalWhatsappModal}
           onClose={() => setShowGlobalWhatsappModal(false)}
-          patient={targetPatient || activePatient || patients[0]}
+          patient={targetPatient || activePatient || patients?.[0]}
           initialTab="cita"
         />
       )}

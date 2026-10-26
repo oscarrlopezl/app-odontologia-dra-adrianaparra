@@ -447,17 +447,19 @@ export default function AppointmentCalendar() {
       )}
 
       {/* Modal de Mensajería WhatsApp */}
-      <WhatsAppModal
-        isOpen={showWhatsappModal}
-        onClose={() => {
-          setShowWhatsappModal(false);
-          setWhatsappApt(null);
-          setWhatsappPatient(null);
-        }}
-        patient={whatsappPatient}
-        appointment={whatsappApt}
-        initialTab="cita"
-      />
+      {showWhatsappModal && whatsappPatient && (
+        <WhatsAppModal
+          isOpen={showWhatsappModal}
+          onClose={() => {
+            setShowWhatsappModal(false);
+            setWhatsappApt(null);
+            setWhatsappPatient(null);
+          }}
+          patient={whatsappPatient}
+          appointment={whatsappApt}
+          initialTab="cita"
+        />
+      )}
     </div>
   );
 }

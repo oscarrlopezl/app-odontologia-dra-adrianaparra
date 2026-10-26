@@ -215,7 +215,7 @@ Estimado(a) *${patientName}*, te compartimos el resumen de tu plan de tratamient
   - Cédula/RIF: ${settings?.pago_movil_cedula || 'V-12345678'}
   - Titular: ${doctorName}
 • *Divisas en Efectivo:* Directamente en consulta ($ USD / € EUR)
-${settings?.zelle_email ? `• *Zelle:* ${settings.zelle_email}\n` : ''}
+${settings?.zelle_email ? `• *Zelle:* ${settings?.zelle_email}\n` : ''}
 Por favor envíanos tu comprobante de pago por este mismo chat al realizar tu transferencia o Pago Móvil para registrarlo en tu expediente. ¡Gracias por tu confianza! 🌟`;
 }
 

@@ -134,11 +134,11 @@ function DoctorLayout({ children }) {
       />
 
       {/* Modal de WhatsApp Rápido en Móvil */}
-      {showQuickMobileWhatsApp && (
+      {showQuickMobileWhatsApp && (activePatient || patients?.[0]) && (
         <WhatsAppModal
           isOpen={showQuickMobileWhatsApp}
           onClose={() => setShowQuickMobileWhatsApp(false)}
-          patient={activePatient || patients[0]}
+          patient={activePatient || patients?.[0]}
           initialTab="cita"
         />
       )}

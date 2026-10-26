@@ -42,7 +42,7 @@ export default function PrescriptionModal({ isOpen, onClose, record, patient }) 
           {/* Membrete de la Doctora */}
           <div className="flex items-center justify-between border-b-2 border-teal-600 pb-4">
             <div className="flex items-center gap-3">
-              {settings.logo_url ? (
+              {settings?.logo_url ? (
                 <img
                   src={settings.logo_url}
                   alt="Logo Consultorio"
@@ -55,13 +55,13 @@ export default function PrescriptionModal({ isOpen, onClose, record, patient }) 
               )}
               <div>
                 <h4 className="font-extrabold text-base text-slate-900 leading-tight">
-                  {settings.doctor_name || 'Dra. Adriana Parra'}
+                  {settings?.doctor_name || 'Dra. Adriana Parra'}
                 </h4>
                 <p className="text-[11px] text-teal-700 font-bold">
-                  {settings.doctor_specialty || 'Odontólogo General y Estética Dental'}
+                  {settings?.doctor_specialty || 'Odontólogo General y Estética Dental'}
                 </p>
                 <p className="text-[10px] text-slate-700">
-                  {settings.clinic_name} • {settings.address}
+                  {settings?.clinic_name || 'Centro Odontológico'} • {settings?.address || 'Guacara / Yagua'}
                 </p>
               </div>
             </div>
@@ -123,9 +123,9 @@ export default function PrescriptionModal({ isOpen, onClose, record, patient }) 
           {/* Firma y Sello de la Doctora */}
           <div className="pt-8 flex justify-end">
             <div className="text-center w-56 border-t border-slate-400 pt-2">
-              <span className="font-extrabold text-xs text-slate-900 block">{settings.doctor_name}</span>
+              <span className="font-extrabold text-xs text-slate-900 block">{settings?.doctor_name || 'Dra. Adriana Parra'}</span>
               <span className="text-[10px] text-slate-700 block">Odontólogo</span>
-              <span className="text-[10px] text-teal-700 font-semibold block">{settings.phone}</span>
+              <span className="text-[10px] text-teal-700 font-semibold block">{settings?.phone || ''}</span>
             </div>
           </div>
         </div>
