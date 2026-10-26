@@ -249,7 +249,63 @@ Odontología Especializada`;
 }
 
 /**
- * PLANTILLA 5: Mensaje Personalizado Libre
+ * PLANTILLA 5: Resumen de Consulta e Informe Clínico para el Paciente
+ */
+export function getConsultationReportText({ patient, record, settings }) {
+  const doctorName = settings?.doctor_name || 'Dra. Adriana Parra';
+  const clinicName = settings?.clinic_name || 'Consultorio Odontológico';
+  const patientName = patient?.full_name?.trim() || 'Paciente';
+  const docId = patient?.document_id || '';
+  const dateFormatted = formatSpanishDate(record?.record_date || new Date().toISOString().split('T')[0]);
+
+  return `🦷 *INFORME DE CONSULTA ODONTOLÓGICA*
+*${doctorName}* • ${clinicName}
+
+Hola *${patientName}* ${docId ? `(CI: ${docId})` : ''}, te compartimos el resumen de tu consulta de hoy:
+
+📅 *Fecha:* ${dateFormatted}
+${record?.reason ? `📋 *Motivo de Consulta:* ${record.reason}\n` : ''}
+${record?.diagnosis ? `🩺 *Diagnóstico:* ${record.diagnosis}\n` : ''}
+${record?.tooth_numbers?.length ? `🦷 *Piezas Dentales Tratadas:* ${record.tooth_numbers.join(', ')}\n` : ''}
+📌 *Procedimiento Realizado:*
+${record?.treatment || record?.procedure || 'Procedimiento odontológico especializado completado satisfactoriamente.'}
+
+${record?.prescriptions ? `💊 *Medicamentos Indicados:* ${record.prescriptions}\n` : ''}
+*${doctorName}*
+Odontología Especializada • Guacara / Yagua 🇻🇪`;
+}
+
+/**
+ * PLANTILLA 6: Constancia de Asistencia / Reposo Odontológico
+ */
+export function getMedicalJustificationText({ patient, record, daysOff = '24 horas', settings }) {
+  const doctorName = settings?.doctor_name || 'Dra. Adriana Parra';
+  const clinicName = settings?.clinic_name || 'Consultorio Odontológico';
+  const patientName = patient?.full_name?.trim() || 'Paciente';
+  const docId = patient?.document_id || 'N/A';
+  const dateFormatted = formatSpanishDate(record?.record_date || new Date().toISOString().split('T')[0]);
+
+  return `📋 *CONSTANCIA DE ASISTENCIA Y REPOSO ODONTOLÓGICO*
+*${doctorName}* • ${clinicName}
+
+A quien pueda interesar:
+
+Por medio de la presente se hace constar que el(la) ciudadano(a):
+👤 *${patientName}*
+🆔 *C.I.:* ${docId}
+
+Asistió a consulta y procedimiento odontológico el día de hoy, *${dateFormatted}*.
+
+Por tal motivo, se sugiere reposo por un lapso de *${daysOff}* y el cumplimiento estricto del tratamiento médico indicado.
+
+Constancia que se expide a solicitud de la parte interesada en Guacara / Yagua, Edo. Carabobo.
+
+*${doctorName}*
+Odontología Especializada`;
+}
+
+/**
+ * PLANTILLA 7: Mensaje Personalizado Libre
  */
 export function getCustomMessageText({ patient, messageText, settings }) {
   const doctorName = settings?.doctor_name || 'Dra. Adriana Parra';

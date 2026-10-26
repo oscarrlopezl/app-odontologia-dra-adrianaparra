@@ -13,7 +13,9 @@ import {
   Check,
   Sparkles,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  FileCheck
 } from 'lucide-react';
 import {
   cleanVenezuelanPhone,
@@ -22,6 +24,8 @@ import {
   getPostTreatmentCareText,
   getBudgetReminderText,
   getPrescriptionText,
+  getConsultationReportText,
+  getMedicalJustificationText,
   getCustomMessageText,
   POST_TREATMENT_TYPES,
 } from '../../lib/whatsappService';
@@ -45,6 +49,7 @@ export default function WhatsAppModal({
   // Opciones para cuidados post-tratamiento
   const [careType, setCareType] = useState('cirugia');
   const [customCareNotes, setCustomCareNotes] = useState('');
+  const [daysOff, setDaysOff] = useState('24 horas');
 
   // Cita seleccionada (por defecto la prop o la más próxima del paciente)
   const [selectedAppointment, setSelectedAppointment] = useState(appointment);
@@ -117,6 +122,23 @@ export default function WhatsAppModal({
         settings,
       });
       setMessageText(text);
+    } else if (activeTab === 'informe') {
+      const recordToUse = consultationRecord || clinicalRecords.filter((r) => r.patient_id === patient.id)[0];
+      const text = getConsultationReportText({
+        patient,
+        record: recordToUse,
+        settings,
+      });
+      setMessageText(text);
+    } else if (activeTab === 'constancia') {
+      const recordToUse = consultationRecord || clinicalRecords.filter((r) => r.patient_id === patient.id)[0];
+      const text = getMedicalJustificationText({
+        patient,
+        record: recordToUse,
+        daysOff,
+        settings,
+      });
+      setMessageText(text);
     } else if (activeTab === 'libre') {
       const text = getCustomMessageText({
         patient,
@@ -125,7 +147,7 @@ export default function WhatsAppModal({
       });
       setMessageText(text);
     }
-  }, [activeTab, careType, customCareNotes, selectedAppointment, selectedBudget, patient, settings, isOpen]);
+  }, [activeTab, careType, customCareNotes, daysOff, selectedAppointment, selectedBudget, consultationRecord, patient, settings, isOpen]);
 
   if (!isOpen || !patient) return null;
 
@@ -279,6 +301,32 @@ export default function WhatsAppModal({
 
           <button
             type="button"
+            onClick={() => setActiveTab('informe')}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-t-xl text-xs font-bold transition whitespace-nowrap border-b-2 ${
+              activeTab === 'informe'
+                ? 'border-emerald-600 text-emerald-700 bg-emerald-50/60'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <FileText className="w-4 h-4 text-cyan-600" />
+            <span>Informe de Consulta</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('constancia')}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-t-xl text-xs font-bold transition whitespace-nowrap border-b-2 ${
+              activeTab === 'constancia'
+                ? 'border-emerald-600 text-emerald-700 bg-emerald-50/60'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <FileCheck className="w-4 h-4 text-amber-600" />
+            <span>Constancia / Reposo</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('libre')}
             className={`flex items-center gap-2 px-3.5 py-2.5 rounded-t-xl text-xs font-bold transition whitespace-nowrap border-b-2 ${
               activeTab === 'libre'
@@ -329,6 +377,31 @@ export default function WhatsAppModal({
                   placeholder="Ej: Recuerda colocarte la férula al dormir / Aplicar Clorhexidina al 0.12%"
                   className="w-full px-3 py-2 text-xs bg-white border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Selector de Tiempo de Reposo para Constancia */}
+          {activeTab === 'constancia' && (
+            <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2">
+              <label className="text-xs font-bold text-amber-950 block">
+                Tiempo de Reposo Médico Sugerido:
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                {['24 horas', '48 horas', '3 días', '5 días', 'Reposo por el resto del día'].map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setDaysOff(opt)}
+                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition ${
+                      daysOff === opt
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
               </div>
             </div>
           )}

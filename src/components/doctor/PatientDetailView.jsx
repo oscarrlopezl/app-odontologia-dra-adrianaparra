@@ -296,6 +296,36 @@ export default function PatientDetailView({ patient }) {
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* Botón Enviar Resumen de Consulta por WhatsApp */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedConsultationForWhatsapp(record);
+                        setWhatsappInitialTab('informe');
+                        setShowWhatsappModal(true);
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 text-xs font-bold rounded-lg border border-cyan-200 transition"
+                      title="Enviar resumen e informe de esta consulta por WhatsApp al paciente"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-cyan-600" />
+                      <span>Enviar Consulta WhatsApp</span>
+                    </button>
+
+                    {/* Botón Constancia de Reposo por WhatsApp */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedConsultationForWhatsapp(record);
+                        setWhatsappInitialTab('constancia');
+                        setShowWhatsappModal(true);
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold rounded-lg border border-amber-200 transition"
+                      title="Generar y enviar constancia de asistencia y reposo por WhatsApp"
+                    >
+                      <Receipt className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Constancia Reposo</span>
+                    </button>
+
                     {/* Botón Cuidados Post-Tratamiento por WhatsApp */}
                     <button
                       type="button"

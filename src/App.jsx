@@ -7,7 +7,6 @@ import AppointmentsPage from './pages/doctor/AppointmentsPage';
 import BudgetsAndPaymentsPage from './pages/doctor/BudgetsAndPaymentsPage';
 import CashRegisterPage from './pages/doctor/CashRegisterPage';
 import ClinicSettingsPage from './pages/doctor/ClinicSettingsPage';
-import PatientPortalPage from './pages/patient/PatientPortalPage';
 import DoctorLoginScreen from './components/doctor/DoctorLoginScreen';
 import PwaInstallPrompt from './components/common/PwaInstallPrompt';
 import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';

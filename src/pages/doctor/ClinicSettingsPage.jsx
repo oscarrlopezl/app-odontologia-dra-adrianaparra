@@ -439,15 +439,15 @@ export default function ClinicSettingsPage() {
           </form>
         </div>
 
-        {/* Sección de Promociones para el Portal del Paciente */}
+        {/* Sección de Promociones y Campañas para WhatsApp */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-teal-600" />
-                <span>Promociones Activas en el Portal del Paciente</span>
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <span>Promociones y Ofertas del Consultorio</span>
               </h4>
-              <p className="text-xs text-slate-700">Estas promociones las ven los pacientes desde su teléfono móvil.</p>
+              <p className="text-xs text-slate-700">Beneficios y planes especiales que la doctora puede compartir con sus pacientes por WhatsApp.</p>
             </div>
           </div>
 

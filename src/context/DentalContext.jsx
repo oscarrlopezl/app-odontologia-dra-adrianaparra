@@ -124,61 +124,6 @@ export const DentalProvider = ({ children }) => {
     showToast('Panel de la Doctora bloqueado.', 'info');
   };
 
-  // 5. AUTENTICACIÓN Y PRIVACIDAD: PACIENTE (Portal /portal)
-  const [authenticatedPatientId, setAuthenticatedPatientId] = useState(() => {
-    try {
-      return sessionStorage.getItem('dra_parra_patient_id') || null;
-    } catch {
-      return null;
-    }
-  });
-
-  const loginPatient = (documentId, accessCode) => {
-    const cleanDoc = String(documentId).replace(/\D/g, '');
-    const cleanCode = String(accessCode).trim();
-
-    if (!cleanDoc) {
-      return { success: false, error: 'Por favor ingresa tu número de cédula.' };
-    }
-
-    const patient = patients.find((p) => p.document_id.replace(/\D/g, '') === cleanDoc);
-
-    if (!patient) {
-      return { 
-        success: false, 
-        error: 'No se encontró ningún expediente con esa cédula. Por favor consulta con la Dra. Adriana.' 
-      };
-    }
-
-    const expectedCode = String(patient.access_code || patient.document_id.replace(/\D/g, '').slice(-4) || '1234').trim();
-
-    if (cleanCode === expectedCode || cleanCode === '1234') {
-      setAuthenticatedPatientId(patient.id);
-      try {
-        sessionStorage.setItem('dra_parra_patient_id', patient.id);
-      } catch (e) {
-        // ignore
-      }
-      showToast(`¡Hola, ${patient.full_name.split(' ')[0]}! Has ingresado a tu portal.`, 'success');
-      return { success: true, patient };
-    }
-
-    return { 
-      success: false, 
-      error: 'La clave de acceso es incorrecta. Si la olvidaste, contáctate por WhatsApp con el consultorio.' 
-    };
-  };
-
-  const logoutPatient = () => {
-    setAuthenticatedPatientId(null);
-    try {
-      sessionStorage.removeItem('dra_parra_patient_id');
-    } catch (e) {
-      // ignore
-    }
-    showToast('Sesión de paciente cerrada de forma segura.', 'info');
-  };
-
   // Función para obtener y sincronizar la tasa del BCV en vivo
   const syncBcvRate = useCallback(async (showNotification = false) => {
     setIsUpdatingBcv(true);
@@ -743,14 +688,10 @@ export const DentalProvider = ({ children }) => {
     syncBcvRate,
     // Gestión y limpieza de datos
     clearAllDemoData,
-    // Autenticación Doctora y Pacientes
+    // Autenticación Doctora
     isDoctorAuthenticated,
     loginDoctor,
     logoutDoctor,
-    authenticatedPatientId,
-    authenticatedPatient: patients.find((p) => p.id === authenticatedPatientId) || null,
-    loginPatient,
-    logoutPatient,
   };
 
   return <DentalContext.Provider value={value}>{children}</DentalContext.Provider>;
