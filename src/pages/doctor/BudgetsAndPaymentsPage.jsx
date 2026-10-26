@@ -61,7 +61,7 @@ export default function BudgetsAndPaymentsPage() {
         subtitle="Monitoreo de cartera financiera, planes de tratamiento por fases y registro de pagos"
       />
 
-      <div className="flex-1 p-6 md:p-8 space-y-6 max-w-7xl w-full mx-auto">
+      <div className="flex-1 p-3.5 sm:p-6 md:p-8 space-y-5 sm:space-y-6 max-w-7xl w-full mx-auto">
         {/* Métricas Globales */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs">

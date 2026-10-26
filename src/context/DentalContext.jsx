@@ -187,9 +187,12 @@ export const DentalProvider = ({ children }) => {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      showToast('⚡ ¡Conexión restaurada! Sincronizando con la nube y tasa BCV...', 'info');
-      syncPendingQueue();
       syncBcvRate(false);
+      if (syncQueue.length > 0) {
+        showToast(`⚡ ¡Internet disponible! Tienes ${syncQueue.length} ${syncQueue.length === 1 ? 'cambio pendiente' : 'cambios pendientes'}. Autoriza la subida cuando estés lista.`, 'info');
+      } else {
+        showToast('⚡ Conexión a internet activa.', 'success');
+      }
     };
 
     const handleOffline = () => {
@@ -206,9 +209,16 @@ export const DentalProvider = ({ children }) => {
     };
   }, [syncQueue]);
 
-  // 3. Procesador de Cola de Sincronización hacia Supabase
-  const syncPendingQueue = useCallback(async () => {
-    if (!isConfigured || !supabase || syncQueue.length === 0) return;
+  // 3. Procesador de Cola de Sincronización hacia Supabase con AUTORIZACIÓN EXPLICITA
+  const authorizeAndUploadPendingChanges = async () => {
+    if (!isConfigured || !supabase) {
+      showToast('Supabase no está configurado aún. Los cambios se mantienen 100% seguros en este teléfono.', 'info');
+      return;
+    }
+    if (syncQueue.length === 0) {
+      showToast('No hay cambios pendientes por subir. Todo está al día.', 'info');
+      return;
+    }
 
     setIsSyncing(true);
     const queueCopy = [...syncQueue];
@@ -224,7 +234,7 @@ export const DentalProvider = ({ children }) => {
           await supabase.from(item.table).delete().eq('id', item.id);
         }
       } catch (err) {
-        console.warn(`Error al sincronizar item [${item.table}]:`, err);
+        console.warn(`Error al subir item [${item.table}]:`, err);
         failedItems.push(item);
       }
     }
@@ -236,15 +246,29 @@ export const DentalProvider = ({ children }) => {
     if (syncedCount > 0) {
       const now = new Date().toLocaleTimeString('es-VE');
       setLastSyncTime(now);
-      showToast(`☁️ ${syncedCount} cambios pendientes fueron subidos con éxito a la nube (${now}).`);
+      showToast(`☁️ ¡Autorizado! ${syncedCount} cambios fueron subidos a la nube Supabase con éxito (${now}).`, 'success');
     }
-  }, [syncQueue]);
+    if (failedItems.length > 0) {
+      showToast(`Aviso: ${failedItems.length} cambios no se pudieron subir por inestabilidad de red. Se conservan en cola.`, 'warning');
+    }
+  };
 
   // Helper para encolar o enviar directamente a Supabase
-  const pushToCloud = async (table, action, data, id = null) => {
+  const pushToCloud = async (table, action, data, id = null, description = '') => {
     // Si no hay Supabase o estamos offline, encolar de inmediato
     if (!isConfigured || !supabase || !navigator.onLine) {
-      setSyncQueue((prev) => [...prev, { table, action, data, id, timestamp: Date.now() }]);
+      setSyncQueue((prev) => [
+        ...prev,
+        {
+          id: `queue-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          table,
+          action,
+          data,
+          id,
+          description: description || `${action.toUpperCase()} en ${table}`,
+          timestamp: Date.now(),
+        },
+      ]);
       return;
     }
 
@@ -258,8 +282,19 @@ export const DentalProvider = ({ children }) => {
       }
       setLastSyncTime(new Date().toLocaleTimeString('es-VE'));
     } catch (err) {
-      console.warn(`Fallo conexión temporal con Supabase. Guardado en cola para reintento:`, err);
-      setSyncQueue((prev) => [...prev, { table, action, data, id, timestamp: Date.now() }]);
+      console.warn(`Fallo de conexión temporal con Supabase. Guardado en cola para autorizar y subir:`, err);
+      setSyncQueue((prev) => [
+        ...prev,
+        {
+          id: `queue-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          table,
+          action,
+          data,
+          id,
+          description: description || `${action.toUpperCase()} en ${table}`,
+          timestamp: Date.now(),
+        },
+      ]);
     }
   };
 
@@ -676,7 +711,8 @@ export const DentalProvider = ({ children }) => {
     connectedToSupabase,
     syncQueue,
     pendingSyncCount: syncQueue.length,
-    syncPendingQueue,
+    syncPendingQueue: authorizeAndUploadPendingChanges,
+    authorizeAndUploadPendingChanges,
     lastSyncTime,
     exportLocalBackup,
     toast,

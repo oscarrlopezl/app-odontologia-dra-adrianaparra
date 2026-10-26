@@ -289,7 +289,13 @@ export default function Odontogram({ patientId }) {
       </div>
 
       {/* Grilla Anatómica del Odontograma */}
-      <div className="bg-slate-50/80 rounded-2xl p-6 border border-slate-200/80 overflow-x-auto">
+      <div className="sm:hidden mb-2 flex items-center justify-between">
+        <span className="text-[11px] font-bold text-slate-700">Arcada Dental:</span>
+        <span className="text-[10px] text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full font-bold">
+          ↔️ Desliza con el dedo
+        </span>
+      </div>
+      <div className="bg-slate-50/80 rounded-2xl p-3 sm:p-6 border border-slate-200/80 overflow-x-auto">
         {/* Arcada Superior */}
         <div className="mb-6">
           <div className="flex items-center justify-between text-xs font-bold text-slate-600 mb-2 px-4 uppercase tracking-wider">

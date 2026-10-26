@@ -117,7 +117,7 @@ export default function ClinicSettingsPage() {
         subtitle="Datos de contacto de la Dra. Adriana Parra, logotipo, tasa del día y promociones"
       />
 
-      <div className="flex-1 p-6 md:p-8 space-y-6 max-w-5xl w-full mx-auto">
+      <div className="flex-1 p-3.5 sm:p-6 md:p-8 space-y-5 sm:space-y-6 max-w-5xl w-full mx-auto">
         {/* Banner de Supabase & Cuenta de la Doctora */}
         <div className="bg-gradient-to-r from-slate-900 to-teal-950 rounded-3xl p-6 text-white border border-teal-800/40 shadow-xl">
           <div className="flex flex-wrap items-center justify-between gap-4">

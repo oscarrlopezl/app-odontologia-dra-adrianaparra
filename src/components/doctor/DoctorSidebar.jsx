@@ -12,10 +12,14 @@ import {
   HeartPulse,
   Lock,
   MessageSquare,
+  X,
+  Database,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 
-export default function DoctorSidebar() {
-  const { settings, connectedToSupabase, logoutDoctor, patients, activePatient } = useDental();
+export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
+  const { settings, connectedToSupabase, logoutDoctor, patients, activePatient, isOnline, pendingSyncCount } = useDental();
   const [showGlobalWhatsappModal, setShowGlobalWhatsappModal] = useState(false);
   const [targetPatient, setTargetPatient] = useState(null);
 
@@ -27,8 +31,12 @@ export default function DoctorSidebar() {
     { to: '/doctor/ajustes', label: 'Ajustes del Consultorio', icon: Settings },
   ];
 
-  return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 min-h-screen border-r border-slate-800">
+  const handleNavClick = () => {
+    if (onClose) onClose();
+  };
+
+  const sidebarContent = (
+    <>
       <div>
         {/* Logo y Branding del Consultorio */}
         <div className="p-4 border-b border-slate-800">
@@ -39,23 +47,37 @@ export default function DoctorSidebar() {
               className="max-h-16 w-auto object-contain"
             />
           </div>
+          <div className="text-center mt-2.5">
+            <h3 className="font-extrabold text-white text-xs tracking-tight">
+              {settings.doctor_name || 'Dra. Adriana Parra'}
+            </h3>
+            <p className="text-[10px] text-teal-400 font-semibold truncate">
+              Odontología Especializada
+            </p>
+          </div>
         </div>
 
-        {/* Estado de Supabase */}
+        {/* Estado de Supabase y Modo Offline */}
         <div className="mx-4 mt-4 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
             <span
-              className={`w-2.5 h-2.5 rounded-full ${
-                connectedToSupabase ? 'bg-emerald-500 shadow-sm shadow-emerald-500' : 'bg-amber-500'
+              className={`w-2 h-2 rounded-full ${
+                isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
               }`}
             ></span>
-            <span className="text-slate-300 font-medium">
-              {connectedToSupabase ? 'Supabase Conectado' : 'Modo Demo Activo'}
+            <span className="text-slate-300 font-medium text-[11px]">
+              {isOnline ? (connectedToSupabase ? 'Supabase Nube' : 'En Línea') : 'Modo Offline Seguro'}
             </span>
           </div>
-          <span className="text-[10px] text-slate-700 bg-slate-900 px-1.5 py-0.5 rounded">
-            v1.0
-          </span>
+          {pendingSyncCount > 0 ? (
+            <span className="text-[10px] text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded font-bold border border-amber-500/30">
+              {pendingSyncCount} pend.
+            </span>
+          ) : (
+            <span className="text-[10px] text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded font-mono">
+              Al día
+            </span>
+          )}
         </div>
 
         {/* Navegación Principal */}
@@ -70,6 +92,7 @@ export default function DoctorSidebar() {
                 key={item.to}
                 to={item.to}
                 end={item.exact}
+                onClick={handleNavClick}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive
@@ -138,7 +161,10 @@ export default function DoctorSidebar() {
         {/* Bloquear Panel de la Doctora */}
         <button
           type="button"
-          onClick={logoutDoctor}
+          onClick={() => {
+            if (onClose) onClose();
+            logoutDoctor();
+          }}
           className="flex items-center justify-center gap-2 w-full py-2 text-xs font-bold text-rose-300 bg-rose-950/40 hover:bg-rose-900/60 rounded-xl border border-rose-800/40 transition"
           title="Bloquear el panel de la doctora con clave"
         >
@@ -160,6 +186,37 @@ export default function DoctorSidebar() {
           initialTab="cita"
         />
       )}
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* 1. Versión de Escritorio (visible en pantallas medianas y grandes: md+) */}
+      <aside className="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col justify-between shrink-0 min-h-screen border-r border-slate-800">
+        {sidebarContent}
+      </aside>
+
+      {/* 2. Versión Móvil: Drawer deslizable off-canvas */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          {/* Backdrop con desenfoque suave para cerrar al tocar afuera */}
+          <div
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-in fade-in"
+            onClick={onClose}
+          />
+          {/* Panel deslizante */}
+          <aside className="relative w-72 max-w-[85vw] bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 h-full border-r border-slate-800 shadow-2xl z-10 animate-in slide-in-from-left duration-200 overflow-y-auto">
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800/80 z-20 transition"
+              title="Cerrar menú"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

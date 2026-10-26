@@ -37,14 +37,14 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
   });
 
   return (
-    <header className="bg-white border-b border-slate-200 px-8 py-5">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <header className="bg-white border-b border-slate-200 px-4 py-3.5 sm:px-8 sm:py-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">{title}</h2>
-          {subtitle && <p className="text-xs text-slate-700 mt-0.5">{subtitle}</p>}
+          <h2 className="text-base sm:text-2xl font-extrabold text-slate-800 tracking-tight">{title}</h2>
+          {subtitle && <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">{subtitle}</p>}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* INDICADOR DOBLE GUARDADO (A PRUEBA DE APAGONES Y CAÍDAS DE WIFI) */}
           <div className="flex items-center gap-2">
             {isOnline ? (

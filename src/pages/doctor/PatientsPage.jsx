@@ -4,7 +4,7 @@ import DoctorHeader from '../../components/doctor/DoctorHeader';
 import PatientDetailView from '../../components/doctor/PatientDetailView';
 import PatientFormModal from '../../components/doctor/PatientFormModal';
 import WhatsAppModal from '../../components/doctor/WhatsAppModal';
-import { Search, Plus, User, Phone, AlertTriangle, ChevronRight, MessageSquare } from 'lucide-react';
+import { Search, Plus, User, Phone, AlertTriangle, ChevronRight, MessageSquare, ArrowLeft } from 'lucide-react';
 
 export default function PatientsPage() {
   const { patients, activePatientId, setActivePatientId, activePatient } = useDental();
@@ -12,6 +12,7 @@ export default function PatientsPage() {
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
   const [showQuickWhatsapp, setShowQuickWhatsapp] = useState(false);
   const [quickWhatsappPatient, setQuickWhatsappPatient] = useState(null);
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
   const filteredPatients = patients.filter((p) => {
     const term = searchTerm.toLowerCase();
@@ -37,10 +38,10 @@ export default function PatientsPage() {
         }
       />
 
-      <div className="flex-1 p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Columna Izquierda: Buscador y Lista de Pacientes (4 cols) */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
+      <div className="flex-1 p-3.5 sm:p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+        {/* Columna Izquierda: Buscador y Lista de Pacientes (4 cols en escritorio, vista principal en móvil) */}
+        <div className={`lg:col-span-4 space-y-3.5 sm:space-y-4 ${mobileView === 'detail' ? 'hidden lg:block' : 'block'}`}>
+          <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-2xs">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-700" />
               <input
@@ -88,8 +89,11 @@ export default function PatientsPage() {
                 return (
                   <div
                     key={pat.id}
-                    onClick={() => setActivePatientId(pat.id)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    onClick={() => {
+                      setActivePatientId(pat.id);
+                      setMobileView('detail');
+                    }}
+                    className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                       isSelected
                         ? 'bg-teal-50/80 border-teal-500 ring-2 ring-teal-500/20 shadow-xs'
                         : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
@@ -153,8 +157,29 @@ export default function PatientsPage() {
           </div>
         </div>
 
-        {/* Columna Derecha: Detalle Completo del Paciente Seleccionado (8 cols) */}
-        <div className="lg:col-span-8">
+        {/* Columna Derecha: Detalle Completo del Paciente Seleccionado (8 cols en escritorio, pantalla completa en móvil) */}
+        <div className={`lg:col-span-8 ${mobileView === 'list' ? 'hidden lg:block' : 'block'}`}>
+          {/* Botón Volver a la Lista en vista Móvil */}
+          <div className="lg:hidden mb-3.5 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setMobileView('list')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-800 rounded-xl border border-slate-200 text-xs font-bold shadow-2xs transition active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4 text-teal-600" />
+              <span>← Volver a la Lista</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowNewPatientModal(true)}
+              className="inline-flex items-center gap-1 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-2xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Nuevo</span>
+            </button>
+          </div>
+
           <PatientDetailView patient={activePatient} />
         </div>
       </div>

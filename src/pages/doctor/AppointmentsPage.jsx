@@ -10,7 +10,7 @@ export default function AppointmentsPage() {
         subtitle="Control de consultas programadas, tiempos por procedimiento y recepción de solicitudes web"
       />
 
-      <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+      <div className="flex-1 p-3.5 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
         <AppointmentCalendar />
       </div>
     </div>

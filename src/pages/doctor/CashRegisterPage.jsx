@@ -10,7 +10,7 @@ export default function CashRegisterPage() {
         subtitle="Control de entradas y salidas de dinero por método de pago (Efectivo USD, Pago Móvil, Zelle, Punto)"
       />
 
-      <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+      <div className="flex-1 p-3.5 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
         <CashRegisterReconciliation />
       </div>
     </div>
