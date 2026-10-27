@@ -450,11 +450,26 @@ export const DentalProvider = ({ children }) => {
   };
 
   const updateBudget = async (budgetId, updatedFields) => {
+    let fullUpdatedBudget = null;
     setBudgets((prev) =>
-      prev.map((b) => (b.id === budgetId ? { ...b, ...updatedFields } : b))
+      prev.map((b) => {
+        if (b.id === budgetId) {
+          fullUpdatedBudget = { ...b, ...updatedFields };
+          return fullUpdatedBudget;
+        }
+        return b;
+      })
     );
-    showToast('Presupuesto actualizado.');
-    await pushToCloud('treatment_budgets', 'upsert', [{ id: budgetId, ...updatedFields }], budgetId);
+    showToast('Presupuesto actualizado con éxito.');
+    if (fullUpdatedBudget) {
+      await pushToCloud('treatment_budgets', 'upsert', [fullUpdatedBudget], budgetId);
+    }
+  };
+
+  const deleteBudget = async (budgetId) => {
+    setBudgets((prev) => prev.filter((b) => b.id !== budgetId));
+    showToast('Presupuesto eliminado.', 'warning');
+    await pushToCloud('treatment_budgets', 'delete', null, budgetId);
   };
 
   const toggleBudgetItem = (budgetId, phaseId, itemIndex) => {
@@ -695,6 +710,7 @@ export const DentalProvider = ({ children }) => {
     budgets,
     addBudget,
     updateBudget,
+    deleteBudget,
     toggleBudgetItem,
     payments,
     registerPayment,

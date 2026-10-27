@@ -8,6 +8,7 @@ import PaymentModal from './PaymentModal';
 import PatientFormModal from './PatientFormModal';
 import PrescriptionModal from '../common/PrescriptionModal';
 import WhatsAppModal from './WhatsAppModal';
+import PatientMedicalHistoryEditor from './PatientMedicalHistoryEditor';
 import {
   User,
   Phone,
@@ -84,7 +85,7 @@ export default function PatientDetailView({ patient }) {
     { id: 'historia', label: `Evolución e Historia (${patientRecords.length})`, icon: FileText },
     { id: 'radiografias', label: `Radiografías (${patientRadios.length})`, icon: ImageIcon },
     { id: 'presupuestos', label: 'Presupuestos y Pagos', icon: CreditCard },
-    { id: 'antecedentes', label: 'Datos y Antecedentes', icon: HeartPulse },
+    { id: 'antecedentes', label: 'Historial Médico y Síntomas', icon: HeartPulse },
   ];
 
   return (
@@ -148,22 +149,54 @@ export default function PatientDetailView({ patient }) {
                 </button>
               </div>
 
-              {/* Badges de Condiciones Médicas */}
-              {patient.medical_conditions?.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> Alerta:
-                  </span>
-                  {patient.medical_conditions.map((cond, idx) => (
-                    <span
-                      key={idx}
-                      className="bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-semibold px-2 py-0.5 rounded-md"
-                    >
-                      {cond}
+              {/* Alertas Médicas, Alergias y Síntomas en Cabecera */}
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                {/* Alergias Destacadas (Rojo) */}
+                {(patient.allergies?.length > 0 || (patient.medical_conditions || []).some((c) => /alergia|alérgic|penicil|látex|lidoca/i.test(c))) && (
+                  <div className="bg-rose-600 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-xl shadow-xs flex items-center gap-1.5 animate-pulse">
+                    <AlertTriangle className="w-3.5 h-3.5 text-white shrink-0" />
+                    <span>
+                      ALERTA ALERGIAS:{' '}
+                      {patient.allergies?.length > 0
+                        ? patient.allergies.join(', ')
+                        : patient.medical_conditions
+                            .filter((c) => /alergia|alérgic|penicil|látex|lidoca/i.test(c))
+                            .join(', ')}
                     </span>
-                  ))}
-                </div>
-              )}
+                  </div>
+                )}
+
+                {/* Condiciones Médicas (Ámbar) */}
+                {(patient.systemic_conditions?.length > 0 || (patient.medical_conditions || []).some((c) => !/alergia|alérgic|penicil|látex|lidoca/i.test(c))) && (
+                  <div className="bg-amber-50 border border-amber-300 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5">
+                    <HeartPulse className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>
+                      {patient.systemic_conditions?.length > 0
+                        ? patient.systemic_conditions.join(', ')
+                        : patient.medical_conditions
+                            .filter((c) => !/alergia|alérgic|penicil|látex|lidoca/i.test(c))
+                            .join(', ')}
+                    </span>
+                  </div>
+                )}
+
+                {/* Síntomas Odontológicos Actuales (Verde / Teal) */}
+                {patient.dental_symptoms?.length > 0 && (
+                  <div className="bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                    <span>Síntomas: {patient.dental_symptoms.slice(0, 3).join(', ')}{patient.dental_symptoms.length > 3 ? ` (+${patient.dental_symptoms.length - 3})` : ''}</span>
+                  </div>
+                )}
+
+                {/* Botón rápido para ir al Historial Clínico */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('antecedentes')}
+                  className="text-[11px] font-bold text-teal-700 hover:text-teal-900 underline ml-1"
+                >
+                  Editar Síntomas y Alergias →
+                </button>
+              </div>
             </div>
           </div>
 
@@ -540,54 +573,7 @@ export default function PatientDetailView({ patient }) {
       )}
 
       {activeTab === 'antecedentes' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
-          <h4 className="font-extrabold text-slate-800 text-base">Ficha Médica y Contacto de Emergencia</h4>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div>
-                <span className="text-xs font-bold text-slate-700 uppercase block">Dirección de Domicilio:</span>
-                <p className="text-xs text-slate-800 mt-0.5">{patient.address || 'No especificada'}</p>
-              </div>
-
-              <div>
-                <span className="text-xs font-bold text-slate-700 uppercase block">Contacto de Emergencia:</span>
-                <p className="text-xs text-slate-800 font-bold mt-0.5">
-                  {patient.emergency_contact_name || 'No especificado'}
-                </p>
-                <p className="text-xs text-teal-700">{patient.emergency_contact_phone}</p>
-              </div>
-
-              <div>
-                <span className="text-xs font-bold text-slate-700 uppercase block">Código de Acceso Portal Paciente:</span>
-                <span className="inline-block mt-1 font-mono font-bold text-sm bg-slate-100 text-slate-800 px-3 py-1 rounded-lg">
-                  {patient.access_code}
-                </span>
-                <p className="text-[11px] text-slate-700 mt-1">El paciente usa su cédula y este código para entrar a su portal móvil.</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <span className="text-xs font-bold text-rose-600 uppercase block">Condiciones Médicas / Alergias:</span>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {patient.medical_conditions?.map((c, i) => (
-                    <span key={i} className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold px-2.5 py-1 rounded-lg">
-                      {c}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <span className="text-xs font-bold text-slate-700 uppercase block">Notas y Observaciones de la Doctora:</span>
-                <p className="text-xs text-slate-700 mt-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  {patient.notes || 'Sin antecedentes adicionales.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PatientMedicalHistoryEditor patient={patient} />
       )}
 
       {/* Modales auxiliares */}

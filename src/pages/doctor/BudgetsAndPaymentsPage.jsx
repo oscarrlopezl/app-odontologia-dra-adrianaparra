@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useDental } from '../../context/DentalContext';
 import DoctorHeader from '../../components/doctor/DoctorHeader';
 import PaymentModal from '../../components/doctor/PaymentModal';
+import BudgetDeliverModal from '../../components/doctor/BudgetDeliverModal';
 import { 
   CreditCard, 
   DollarSign, 
@@ -11,7 +12,8 @@ import {
   User, 
   Plus,
   Receipt,
-  CheckCircle2
+  CheckCircle2,
+  Printer
 } from 'lucide-react';
 
 export default function BudgetsAndPaymentsPage() {
@@ -19,6 +21,7 @@ export default function BudgetsAndPaymentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [onlyDebtors, setOnlyDebtors] = useState(false);
   const [selectedPatientForPayment, setSelectedPatientForPayment] = useState(null);
+  const [deliverBudgetInfo, setDeliverBudgetInfo] = useState(null);
 
   const exchangeRate = Number(settings?.usd_exchange_rate) || 40.0;
 
@@ -189,13 +192,29 @@ export default function BudgetsAndPaymentsPage() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => setSelectedPatientForPayment(row.patient)}
-                        className="bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold px-3 py-1.5 rounded-lg border border-teal-200 transition text-[11px] inline-flex items-center gap-1"
-                      >
-                        <DollarSign className="w-3 h-3" />
-                        <span>Abonar</span>
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        {row.budgetsCount > 0 && (
+                          <button
+                            onClick={() => {
+                              const b = budgets.find((bg) => bg.patient_id === row.patient.id);
+                              if (b) setDeliverBudgetInfo({ budget: b, patient: row.patient });
+                            }}
+                            className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-2.5 py-1.5 rounded-lg transition text-[11px] inline-flex items-center gap-1 shadow-xs"
+                            title="Entregar o imprimir presupuesto formal al cliente"
+                          >
+                            <Printer className="w-3 h-3 text-teal-300" />
+                            <span>Entregar</span>
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => setSelectedPatientForPayment(row.patient)}
+                          className="bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold px-3 py-1.5 rounded-lg border border-teal-200 transition text-[11px] inline-flex items-center gap-1"
+                        >
+                          <DollarSign className="w-3 h-3" />
+                          <span>Abonar</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -211,6 +230,16 @@ export default function BudgetsAndPaymentsPage() {
           onClose={() => setSelectedPatientForPayment(null)}
           patientId={selectedPatientForPayment.id}
           patientName={selectedPatientForPayment.full_name}
+        />
+      )}
+
+      {deliverBudgetInfo && (
+        <BudgetDeliverModal
+          isOpen={Boolean(deliverBudgetInfo)}
+          onClose={() => setDeliverBudgetInfo(null)}
+          budget={deliverBudgetInfo.budget}
+          patient={deliverBudgetInfo.patient}
+          payments={payments}
         />
       )}
     </div>

@@ -85,7 +85,8 @@ export default function PatientsPage() {
             ) : (
               filteredPatients.map((pat) => {
                 const isSelected = pat.id === activePatientId;
-                const hasAlert = pat.medical_conditions?.length > 0;
+                const hasAlert = (pat.allergies?.length > 0) || (pat.medical_conditions?.length > 0);
+                const hasSymptoms = pat.dental_symptoms?.length > 0;
 
                 return (
                   <div

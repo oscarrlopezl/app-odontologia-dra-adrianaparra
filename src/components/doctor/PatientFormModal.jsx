@@ -272,18 +272,70 @@ export default function PatientFormModal({ isOpen, onClose, patientToEdit = null
             </div>
           </div>
 
-          {/* Alertas Médicas */}
-          <div>
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-              Condiciones Médicas y Alergias (Separadas por coma)
-            </label>
+          {/* Alertas Médicas y Alergias con Chips Rápidos */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                Condiciones Médicas, Alergias y Síntomas
+              </label>
+              <span className="text-[10px] text-teal-700 font-bold">1 clic para agregar</span>
+            </div>
+
             <input
               type="text"
               value={formData.medical_conditions}
               onChange={(e) => setFormData({ ...formData, medical_conditions: e.target.value })}
-              placeholder="Ej: Alergia a Penicilina, Hipertensión, Diabético, Asma"
-              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              placeholder="Ej: Alergia a Penicilina, Hipertensión, Sensibilidad dental..."
+              className="w-full px-3.5 py-2.5 text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
+
+            {/* Chips rápidos de 1 clic */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[
+                'Alergia a Penicilina',
+                'Alergia a Lidocaína',
+                'Alergia a Látex',
+                'Hipertensión arterial',
+                'Diabetes',
+                'Embarazo',
+                'Bruxismo',
+                'Dolor dental agudo',
+                'Sensibilidad dental',
+                'Sangrado de encías',
+              ].map((chip) => {
+                const currentArr = (formData.medical_conditions || '')
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                const isSelected = currentArr.some((c) => c.toLowerCase() === chip.toLowerCase());
+
+                return (
+                  <button
+                    type="button"
+                    key={chip}
+                    onClick={() => {
+                      let nextArr;
+                      if (isSelected) {
+                        nextArr = currentArr.filter((c) => c.toLowerCase() !== chip.toLowerCase());
+                      } else {
+                        nextArr = [...currentArr, chip];
+                      }
+                      setFormData({ ...formData, medical_conditions: nextArr.join(', ') });
+                    }}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1 active:scale-95 ${
+                      isSelected
+                        ? chip.includes('Alergia')
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : 'bg-teal-600 text-white shadow-xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <span>{isSelected ? '✓ ' : '+ '}</span>
+                    <span>{chip}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div>
