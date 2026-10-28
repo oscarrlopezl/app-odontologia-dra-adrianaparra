@@ -50,7 +50,7 @@ export default function ClinicSettingsPage() {
     whatsapp_phone: settings?.whatsapp_phone || settings?.phone || '+58 412-1234567',
     doctor_pin: settings?.doctor_pin || '1234',
     address: settings?.address || 'Guacara / Yagua, Edo. Carabobo',
-    usd_exchange_rate: settings?.usd_exchange_rate || 883.40,
+    usd_exchange_rate: settings?.usd_exchange_rate || bcvInfo?.rate || 887.30,
     schedule: settings?.schedule || 'Lunes a Sábado: 8:00 AM - 5:00 PM',
     logo_url: settings?.logo_url || '',
     pago_movil_banco: settings?.pago_movil_banco || 'Banesco',
@@ -58,6 +58,16 @@ export default function ClinicSettingsPage() {
     pago_movil_cedula: settings?.pago_movil_cedula || 'V-12345678',
     zelle_email: settings?.zelle_email || '',
   });
+
+  useEffect(() => {
+    if (settings) {
+      setFormSettings((prev) => ({
+        ...prev,
+        ...settings,
+        usd_exchange_rate: settings.usd_exchange_rate || bcvInfo?.rate || 887.30,
+      }));
+    }
+  }, [settings, bcvInfo]);
 
   const [newPromo, setNewPromo] = useState({
     title: '',

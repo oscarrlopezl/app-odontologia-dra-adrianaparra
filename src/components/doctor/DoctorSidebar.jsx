@@ -15,11 +15,25 @@ import {
   X,
   Database,
   Wifi,
-  WifiOff
+  WifiOff,
+  RefreshCw
 } from 'lucide-react';
 
 export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
-  const { settings, connectedToSupabase, logoutDoctor, patients, activePatient, isOnline, pendingSyncCount } = useDental();
+  const { 
+    settings, 
+    connectedToSupabase, 
+    logoutDoctor, 
+    patients, 
+    activePatient, 
+    isOnline, 
+    pendingSyncCount,
+    bcvInfo,
+    isUpdatingBcv,
+    syncBcvRate,
+    refreshCloudData,
+    isSyncing,
+  } = useDental();
   const [showGlobalWhatsappModal, setShowGlobalWhatsappModal] = useState(false);
   const [targetPatient, setTargetPatient] = useState(null);
 
@@ -57,27 +71,52 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
           </div>
         </div>
 
-        {/* Estado de Supabase y Modo Offline */}
+        {/* Estado de Supabase y Sincronización Automática */}
         <div className="mx-4 mt-4 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
+          <button
+            onClick={refreshCloudData}
+            disabled={isSyncing}
+            className="flex items-center gap-2 hover:opacity-80 transition text-left"
+            title="Haz clic para sincronizar datos con la nube Supabase ahora"
+          >
             <span
               className={`w-2 h-2 rounded-full ${
                 isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
               }`}
             ></span>
             <span className="text-slate-300 font-medium text-[11px]">
-              {isOnline ? (connectedToSupabase ? 'Supabase Nube' : 'En Línea') : 'Modo Offline Seguro'}
+              {isOnline ? (connectedToSupabase ? 'Nube Sincronizada' : 'En Línea') : 'Modo Offline Seguro'}
             </span>
-          </div>
+            {isSyncing && <RefreshCw className="w-3 h-3 text-emerald-400 animate-spin" />}
+          </button>
           {pendingSyncCount > 0 ? (
             <span className="text-[10px] text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded font-bold border border-amber-500/30">
               {pendingSyncCount} pend.
             </span>
           ) : (
-            <span className="text-[10px] text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded font-mono">
-              Al día
+            <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded font-mono font-bold">
+              100% al día
             </span>
           )}
+        </div>
+
+        {/* Tasa BCV Oficial en Vivo */}
+        <div className="mx-4 mt-2 p-2.5 rounded-xl bg-gradient-to-r from-teal-950/80 to-slate-900 border border-teal-500/30 flex items-center justify-between text-xs shadow-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs">🇻🇪</span>
+            <span className="text-teal-300 font-bold text-[11px]">Tasa BCV</span>
+          </div>
+          <div className="flex items-center gap-1 font-mono font-extrabold text-white text-xs">
+            <span>Bs. {Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30).toFixed(2)}</span>
+            <button
+              onClick={() => syncBcvRate(true)}
+              disabled={isUpdatingBcv}
+              className="text-teal-400 hover:text-teal-200 transition p-1 hover:bg-teal-900/50 rounded-md"
+              title="Actualizar tasa oficial BCV ahora"
+            >
+              <RefreshCw className={`w-3 h-3 ${isUpdatingBcv ? 'animate-spin text-teal-300' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Navegación Principal */}

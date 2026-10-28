@@ -5,6 +5,7 @@
  */
 
 const CACHE_KEY = 'dra_parra_bcv_cache';
+export const CONTINGENCY_BCV_RATE = 887.30;
 
 export async function fetchOfficialBcvRate() {
   // 1. Intentar Fuente Primaria: DolarApi Oficial
@@ -90,11 +91,13 @@ export async function fetchOfficialBcvRate() {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
-      return {
-        ...parsed,
-        source: `${parsed.source || 'BCV'} (Caché local)`,
-        isCached: true,
-      };
+      if (parsed.rate && parsed.rate > 0) {
+        return {
+          ...parsed,
+          source: `${parsed.source || 'BCV'} (Caché local)`,
+          isCached: true,
+        };
+      }
     }
   } catch (e) {
     // ignore
@@ -102,8 +105,8 @@ export async function fetchOfficialBcvRate() {
 
   return {
     success: false,
-    rate: 883.40, // Tasa de contingencia
-    source: 'Estimada',
+    rate: CONTINGENCY_BCV_RATE,
+    source: 'Estimada BCV',
     isCached: true,
     timestamp: Date.now(),
   };
@@ -115,9 +118,16 @@ export async function fetchOfficialBcvRate() {
 export function getCachedBcvRate() {
   try {
     const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed.rate && parsed.rate > 0) return parsed;
+    }
   } catch (e) {
     // ignore
   }
-  return null;
+  return {
+    rate: CONTINGENCY_BCV_RATE,
+    source: 'BCV Oficial',
+    date: null,
+  };
 }

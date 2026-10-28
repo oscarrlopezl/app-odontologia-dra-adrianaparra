@@ -25,9 +25,10 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
     bcvInfo,
     isUpdatingBcv,
     syncBcvRate,
+    refreshCloudData,
   } = useDental();
 
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 40.0;
+  const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
 
   const today = new Date().toLocaleDateString('es-VE', {
     weekday: 'long',
@@ -62,14 +63,16 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
                   </span>
                 </button>
               ) : (
-                <div
-                  className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-900 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs"
-                  title={`Guardado doble activo (Memoria PC + Nube Supabase). Última sync: ${lastSyncTime || 'Al día'}`}
+                <button
+                  onClick={refreshCloudData}
+                  disabled={isSyncing}
+                  className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition active:scale-95"
+                  title={`Guardado doble activo (Memoria PC + Nube Supabase). Última sync: ${lastSyncTime || 'Al día'}. Haz clic para refrescar datos de la nube.`}
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <Database className="w-3.5 h-3.5 text-emerald-600" />
+                  <Database className={`w-3.5 h-3.5 text-emerald-600 ${isSyncing ? 'animate-spin' : ''}`} />
                   <span>Doble Guardado: PC + Nube</span>
-                </div>
+                </button>
               )
             ) : (
               <div

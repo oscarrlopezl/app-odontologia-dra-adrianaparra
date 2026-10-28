@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function CashRegisterReconciliation() {
-  const { cashEntries, addCashEntry, settings } = useDental();
+  const { cashEntries, addCashEntry, settings, bcvInfo } = useDental();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
 
@@ -28,7 +28,7 @@ export default function CashRegisterReconciliation() {
     reference: '',
   });
 
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 40.0;
+  const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
 
   // Filtrar movimientos por fecha seleccionada
   const dailyEntries = cashEntries.filter((e) => e.entry_date === selectedDate);

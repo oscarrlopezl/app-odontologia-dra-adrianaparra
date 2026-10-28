@@ -3,8 +3,8 @@ import { useDental } from '../../context/DentalContext';
 import { DollarSign, CreditCard, Banknote, Landmark, Smartphone, X, AlertCircle } from 'lucide-react';
 
 export default function PaymentModal({ isOpen, onClose, patientId, patientName, defaultBudgetId = null }) {
-  const { registerPayment, settings, budgets } = useDental();
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 40.0;
+  const { registerPayment, settings, budgets, bcvInfo } = useDental();
+  const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
 
   const [amountUsd, setAmountUsd] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('pago_movil');

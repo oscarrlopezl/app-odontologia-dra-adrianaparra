@@ -185,7 +185,7 @@ export function getBudgetReminderText({ patient, budget, financials, settings })
   const doctorName = settings?.doctor_name || 'Dra. Adriana Parra';
   const clinicName = settings?.clinic_name || 'Consultorio Odontológico';
   const patientName = patient?.full_name?.trim() || 'Paciente';
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 883.40;
+  const exchangeRate = Number(settings?.usd_exchange_rate) || 887.30;
 
   const totalUsd = Number(budget?.total_amount || financials?.totalBudget || 0);
   const paidUsd = Number(financials?.totalPaid || 0);

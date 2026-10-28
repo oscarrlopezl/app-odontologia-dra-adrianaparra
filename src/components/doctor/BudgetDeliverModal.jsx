@@ -22,12 +22,12 @@ export default function BudgetDeliverModal({
   patient,
   payments = [],
 }) {
-  const { settings, showToast } = useDental();
+  const { settings, showToast, bcvInfo } = useDental();
   const [copied, setCopied] = useState(false);
 
   if (!isOpen || !budget || !patient) return null;
 
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 883.4;
+  const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
 
   // Cálculos financieros
   const patientPayments = payments.filter((p) => p.patient_id === patient.id);

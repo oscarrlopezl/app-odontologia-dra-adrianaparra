@@ -1,20 +1,32 @@
 // Datos iniciales de demostración para el consultorio de la Dra. Adriana Parra
 
 export const initialClinicSettings = {
+  id: 'd85eadd6-f6d9-40b4-aff3-4f2abd83072b',
   doctor_name: 'Dra. Adriana Parra',
-  doctor_specialty: 'Odontología Integral, Estética Dental y Rehabilitación Oral',
+  doctor_specialty: 'Odontología General y Estética Dental',
   doctor_email: 'Od.adrianaparra@gmail.com',
   clinic_name: 'Centro Odontológico Especializado Dra. Adriana Parra',
   phone: '+58 412-1234567',
   whatsapp_phone: '+58 412-1234567',
-  address: 'Calle Bolívar c/c Sucre, Centro Médico Integral, Guacara / Yagua, Edo. Carabobo',
-  usd_exchange_rate: 883.40,
+  address: 'Guacara / Yagua, Edo. Carabobo',
+  usd_exchange_rate: 887.30,
   doctor_pin: '1234',
   schedule: 'Lunes a Sábado: 8:00 AM - 5:00 PM',
   logo_url: '/logo-dra-adrianaparra.png',
 };
 
-export const initialPatients = [
+// Consultorio limpio y listo para registrar pacientes reales desde cero
+export const initialPatients = [];
+export const initialOdontograms = {};
+export const initialClinicalRecords = [];
+export const initialRadiographs = [];
+export const initialBudgets = [];
+export const initialPayments = [];
+export const initialAppointments = [];
+export const initialCashEntries = [];
+
+// Plantillas de demostración opcionales
+export const demoPatientsExample = [
   {
     id: 'pat-1',
     full_name: 'Carlos Alberto Méndez Lugo',
@@ -80,7 +92,7 @@ export const initialPatients = [
   },
 ];
 
-export const initialOdontograms = {
+export const demoOdontogramsExample = {
   'pat-1': {
     16: { faces: { oclusal: 'resina', mesial: 'sano', distal: 'sano', vestibular: 'sano', lingual: 'sano' }, overall_status: 'resina', notes: 'Resina fotocurada clase I' },
     14: { faces: { oclusal: 'caries', mesial: 'caries', distal: 'sano', vestibular: 'sano', lingual: 'sano' }, overall_status: 'caries', notes: 'Caries interproximal mesio-oclusal' },
@@ -100,7 +112,7 @@ export const initialOdontograms = {
   },
 };
 
-export const initialClinicalRecords = [
+export const demoClinicalRecordsExample = [
   {
     id: 'rec-1',
     patient_id: 'pat-1',
@@ -139,7 +151,7 @@ export const initialClinicalRecords = [
   },
 ];
 
-export const initialRadiographs = [
+export const demoRadiographsExample = [
   {
     id: 'rad-1',
     patient_id: 'pat-1',
@@ -169,7 +181,7 @@ export const initialRadiographs = [
   },
 ];
 
-export const initialBudgets = [
+export const demoBudgetsExample = [
   {
     id: 'bud-1',
     patient_id: 'pat-1',
@@ -249,7 +261,7 @@ export const initialBudgets = [
   },
 ];
 
-export const initialPayments = [
+export const demoPaymentsExample = [
   {
     id: 'pay-1',
     patient_id: 'pat-1',
@@ -288,7 +300,7 @@ export const initialPayments = [
   },
 ];
 
-export const initialAppointments = [
+export const demoAppointmentsExample = [
   {
     id: 'apt-1',
     patient_id: 'pat-1',
@@ -343,7 +355,7 @@ export const initialAppointments = [
   },
 ];
 
-export const initialCashEntries = [
+export const demoCashEntriesExample = [
   {
     id: 'cash-1',
     entry_date: '2026-10-21',

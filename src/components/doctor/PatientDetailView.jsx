@@ -41,6 +41,7 @@ export default function PatientDetailView({ patient }) {
     getPatientFinancials,
     settings,
     deletePatient,
+    bcvInfo,
   } = useDental();
 
   const [activeTab, setActiveTab] = useState('odontograma');
@@ -66,7 +67,7 @@ export default function PatientDetailView({ patient }) {
   }
 
   const financials = getPatientFinancials(patient.id);
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 40.0;
+  const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
 
   const patientRecords = clinicalRecords
     .filter((r) => r.patient_id === patient.id)

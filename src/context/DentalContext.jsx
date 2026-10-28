@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, isConfigured, doctorInfo } from '../lib/supabaseClient';
 import {
   initialClinicSettings,
@@ -12,7 +12,21 @@ import {
   initialCashEntries,
   initialPromotions,
 } from '../lib/mockData';
-import { fetchOfficialBcvRate, getCachedBcvRate } from '../lib/bcvRateService';
+import { fetchOfficialBcvRate, getCachedBcvRate, CONTINGENCY_BCV_RATE } from '../lib/bcvRateService';
+import {
+  generateUUID,
+  ensureUUID,
+  isValidUUID,
+  patientAdapter,
+  budgetAdapter,
+  clinicalRecordAdapter,
+  odontogramAdapter,
+  paymentAdapter,
+  appointmentAdapter,
+  cashRegisterAdapter,
+  radiographAdapter,
+  CLINIC_SETTINGS_ID,
+} from '../lib/dentalSyncAdapters';
 
 const DentalContext = createContext();
 
@@ -44,7 +58,14 @@ export const DentalProvider = ({ children }) => {
   };
 
   // Estados principales
-  const [settings, setSettings] = useState(() => loadLocal('settings', initialClinicSettings));
+  const [settings, setSettings] = useState(() => {
+    const loaded = loadLocal('settings', initialClinicSettings);
+    if (!loaded.usd_exchange_rate || Number(loaded.usd_exchange_rate) < 50) {
+      loaded.usd_exchange_rate = CONTINGENCY_BCV_RATE;
+    }
+    return loaded;
+  });
+
   const [patients, setPatients] = useState(() => loadLocal('patients', initialPatients));
   const [odontograms, setOdontograms] = useState(() => loadLocal('odontograms', initialOdontograms));
   const [clinicalRecords, setClinicalRecords] = useState(() => loadLocal('clinicalRecords', initialClinicalRecords));
@@ -59,7 +80,11 @@ export const DentalProvider = ({ children }) => {
   const [syncQueue, setSyncQueue] = useState(() => loadLocal('sync_queue', []));
 
   // Estados de interfaz y conectividad
-  const [activePatientId, setActivePatientId] = useState(patients[0]?.id || null);
+  const [activePatientId, setActivePatientId] = useState(() => {
+    const loadedPatients = loadLocal('patients', initialPatients);
+    return loadedPatients[0]?.id || null;
+  });
+
   const [toast, setToast] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -68,7 +93,7 @@ export const DentalProvider = ({ children }) => {
 
   // Estados y Sincronización Automática de Tasa BCV Oficial
   const [bcvInfo, setBcvInfo] = useState(() => getCachedBcvRate() || {
-    rate: Number(settings?.usd_exchange_rate) || 883.40,
+    rate: Number(settings?.usd_exchange_rate) || CONTINGENCY_BCV_RATE,
     source: 'BCV Oficial',
     date: null,
   });
@@ -80,6 +105,10 @@ export const DentalProvider = ({ children }) => {
       setToast(null);
     }, 4500);
   };
+
+  // Ref para evitar loops y condiciones de carrera
+  const isFetchingRef = useRef(false);
+  const isFlushingRef = useRef(false);
 
   // 4. AUTENTICACIÓN Y SEGURIDAD: DOCTORA (Panel /doctor)
   const [isDoctorAuthenticated, setIsDoctorAuthenticated] = useState(() => {
@@ -124,12 +153,12 @@ export const DentalProvider = ({ children }) => {
     showToast('Panel de la Doctora bloqueado.', 'info');
   };
 
-  // Función para obtener y sincronizar la tasa del BCV en vivo
+  // Función para obtener y sincronizar la tasa del BCV en vivo y guardarla en Supabase
   const syncBcvRate = useCallback(async (showNotification = false) => {
     setIsUpdatingBcv(true);
     try {
       const res = await fetchOfficialBcvRate();
-      if (res && res.rate) {
+      if (res && res.rate && res.rate > 0) {
         setBcvInfo(res);
         setSettings((prev) => {
           const updated = {
@@ -141,6 +170,16 @@ export const DentalProvider = ({ children }) => {
           saveLocal('settings', updated);
           return updated;
         });
+
+        // Sincronizar tasa actualizada directamente a la base de datos Supabase
+        if (isConfigured && supabase && navigator.onLine) {
+          supabase
+            .from('clinic_settings')
+            .update({ usd_exchange_rate: res.rate })
+            .eq('id', CLINIC_SETTINGS_ID)
+            .then(() => {})
+            .catch((err) => console.warn('Aviso guardando tasa BCV en Supabase:', err));
+        }
 
         if (showNotification) {
           showToast(`🇻🇪 Tasa oficial BCV actualizada: 1 USD = ${res.rate.toFixed(2)} Bs (${res.source})`, 'success');
@@ -156,20 +195,7 @@ export const DentalProvider = ({ children }) => {
     }
   }, []);
 
-  // Auto-actualizar tasa BCV al iniciar la app y cada 30 minutos
-  useEffect(() => {
-    syncBcvRate(false);
-
-    const bcvInterval = setInterval(() => {
-      if (navigator.onLine) {
-        syncBcvRate(false);
-      }
-    }, 30 * 60 * 1000);
-
-    return () => clearInterval(bcvInterval);
-  }, [syncBcvRate]);
-
-  // 1. Guardado local inmediato e hiper-seguro en cada cambio
+  // 1. Guardado local inmediato en cada cambio
   useEffect(() => { saveLocal('settings', settings); }, [settings]);
   useEffect(() => { saveLocal('patients', patients); }, [patients]);
   useEffect(() => { saveLocal('odontograms', odontograms); }, [odontograms]);
@@ -183,184 +209,365 @@ export const DentalProvider = ({ children }) => {
   useEffect(() => { saveLocal('sync_queue', syncQueue); }, [syncQueue]);
   useEffect(() => { if (lastSyncTime) saveLocal('last_sync_time', lastSyncTime); }, [lastSyncTime]);
 
-  // 2. Monitor de Conexión en Tiempo Real (Detector de Apagones / Pérdida de WiFi)
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      syncBcvRate(false);
-      if (syncQueue.length > 0) {
-        showToast(`⚡ ¡Internet disponible! Tienes ${syncQueue.length} ${syncQueue.length === 1 ? 'cambio pendiente' : 'cambios pendientes'}. Autoriza la subida cuando estés lista.`, 'info');
-      } else {
-        showToast('⚡ Conexión a internet activa.', 'success');
+  // CARGA INTEGRAL CONTINUA DESDE SUPABASE (MULTI-DISPOSITIVO TOTAL)
+  const fetchFromSupabase = useCallback(async (silent = false) => {
+    if (!isConfigured || !supabase || !navigator.onLine) return;
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    if (!silent) setIsSyncing(true);
+
+    try {
+      // 1. Ajustes del consultorio
+      const { data: remoteSettings } = await supabase
+        .from('clinic_settings')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+
+      if (remoteSettings) {
+        setSettings((prev) => {
+          const merged = { ...prev, ...remoteSettings };
+          // Si el rate remoto es válido y reciente
+          if (remoteSettings.usd_exchange_rate && Number(remoteSettings.usd_exchange_rate) > 50) {
+            merged.usd_exchange_rate = Number(remoteSettings.usd_exchange_rate);
+          }
+          saveLocal('settings', merged);
+          return merged;
+        });
+        setConnectedToSupabase(true);
       }
-    };
 
-    const handleOffline = () => {
-      setIsOnline(false);
-      showToast('⚠️ Sin señal de internet. Modo Offline Seguro: todo se sigue guardando en la memoria de este equipo.', 'warning');
-    };
+      // 2. Pacientes
+      const { data: remotePatients, error: patErr } = await supabase
+        .from('patients')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+      if (!patErr && Array.isArray(remotePatients)) {
+        const deserializedPatients = remotePatients.map(patientAdapter.deserialize);
+        setPatients(deserializedPatients);
+        saveLocal('patients', deserializedPatients);
+        if (deserializedPatients.length > 0 && !activePatientId) {
+          setActivePatientId(deserializedPatients[0].id);
+        }
+      }
 
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [syncQueue]);
+      // 3. Presupuestos y Fases
+      const { data: remoteBudgets, error: budErr } = await supabase
+        .from('treatment_budgets')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  // 3. Procesador de Cola de Sincronización hacia Supabase con AUTORIZACIÓN EXPLICITA
-  const authorizeAndUploadPendingChanges = async () => {
-    if (!isConfigured || !supabase) {
-      showToast('Supabase no está configurado aún. Los cambios se mantienen 100% seguros en este teléfono.', 'info');
+      if (!budErr && Array.isArray(remoteBudgets)) {
+        const deserializedBudgets = remoteBudgets.map(budgetAdapter.deserialize);
+        setBudgets(deserializedBudgets);
+        saveLocal('budgets', deserializedBudgets);
+      }
+
+      // 4. Historias Clínicas
+      const { data: remoteRecords, error: recErr } = await supabase
+        .from('clinical_records')
+        .select('*')
+        .order('record_date', { ascending: false });
+
+      if (!recErr && Array.isArray(remoteRecords)) {
+        const deserializedRecords = remoteRecords.map(clinicalRecordAdapter.deserialize);
+        setClinicalRecords(deserializedRecords);
+        saveLocal('clinicalRecords', deserializedRecords);
+      }
+
+      // 5. Odontogramas
+      const { data: remoteOdontos, error: odoErr } = await supabase
+        .from('odontograms')
+        .select('*');
+
+      if (!odoErr && Array.isArray(remoteOdontos)) {
+        const odontoMap = odontogramAdapter.toMap(remoteOdontos);
+        setOdontograms(odontoMap);
+        saveLocal('odontograms', odontoMap);
+      }
+
+      // 6. Pagos y Abonos
+      const { data: remotePayments, error: payErr } = await supabase
+        .from('payments')
+        .select('*')
+        .order('payment_date', { ascending: false });
+
+      if (!payErr && Array.isArray(remotePayments)) {
+        setPayments(remotePayments);
+        saveLocal('payments', remotePayments);
+      }
+
+      // 7. Citas y Agenda
+      const { data: remoteAppointments, error: aptErr } = await supabase
+        .from('appointments')
+        .select('*')
+        .order('appointment_date', { ascending: true });
+
+      if (!aptErr && Array.isArray(remoteAppointments)) {
+        const deserializedApts = remoteAppointments.map(appointmentAdapter.deserialize);
+        setAppointments(deserializedApts);
+        saveLocal('appointments', deserializedApts);
+      }
+
+      // 8. Cuadre de Caja
+      const { data: remoteCash, error: cashErr } = await supabase
+        .from('cash_register_entries')
+        .select('*')
+        .order('entry_date', { ascending: false });
+
+      if (!cashErr && Array.isArray(remoteCash)) {
+        setCashEntries(remoteCash);
+        saveLocal('cashEntries', remoteCash);
+      }
+
+      // 9. Radiografías
+      const { data: remoteRadios, error: radErr } = await supabase
+        .from('radiographs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!radErr && Array.isArray(remoteRadios)) {
+        setRadiographs(remoteRadios);
+        saveLocal('radiographs', remoteRadios);
+      }
+
+      const syncTime = new Date().toLocaleTimeString('es-VE');
+      setLastSyncTime(syncTime);
+      saveLocal('last_sync_time', syncTime);
+      setConnectedToSupabase(true);
+    } catch (err) {
+      console.warn('Nota de sincronización: error recuperando datos Supabase:', err);
+    } finally {
+      isFetchingRef.current = false;
+      if (!silent) setIsSyncing(false);
+    }
+  }, [activePatientId]);
+
+  // VACIADO Y SUBIDA AUTOMÁTICA DE LA COLA EN SEGUNDO PLANO
+  const flushSyncQueue = useCallback(async (isManual = false) => {
+    if (!isConfigured || !supabase || !navigator.onLine) return;
+    if (isFlushingRef.current) return;
+
+    const currentQueue = loadLocal('sync_queue', []);
+    if (!currentQueue || currentQueue.length === 0) {
+      if (isManual) showToast('No hay cambios pendientes por subir. Todo está sincronizado.', 'info');
       return;
     }
-    if (syncQueue.length === 0) {
-      showToast('No hay cambios pendientes por subir. Todo está al día.', 'info');
-      return;
-    }
 
+    isFlushingRef.current = true;
     setIsSyncing(true);
-    const queueCopy = [...syncQueue];
+
+    const queueCopy = [...currentQueue];
     const failedItems = [];
 
     for (const item of queueCopy) {
       try {
         if (item.action === 'upsert') {
-          await supabase.from(item.table).upsert(item.data);
+          const { error } = item.options
+            ? await supabase.from(item.table).upsert(item.data, item.options)
+            : await supabase.from(item.table).upsert(item.data);
+          if (error) throw error;
         } else if (item.action === 'insert') {
-          await supabase.from(item.table).insert(item.data);
+          const { error } = await supabase.from(item.table).insert(item.data);
+          if (error) throw error;
         } else if (item.action === 'delete') {
-          await supabase.from(item.table).delete().eq('id', item.id);
+          const { error } = await supabase.from(item.table).delete().eq('id', item.id);
+          if (error) throw error;
         }
       } catch (err) {
-        console.warn(`Error al subir item [${item.table}]:`, err);
+        console.warn(`Error al subir item pendiente [${item.table}]:`, err.message || err);
         failedItems.push(item);
       }
     }
 
     setSyncQueue(failedItems);
+    saveLocal('sync_queue', failedItems);
     setIsSyncing(false);
-    const syncedCount = queueCopy.length - failedItems.length;
+    isFlushingRef.current = false;
 
+    const syncedCount = queueCopy.length - failedItems.length;
     if (syncedCount > 0) {
       const now = new Date().toLocaleTimeString('es-VE');
       setLastSyncTime(now);
-      showToast(`☁️ ¡Autorizado! ${syncedCount} cambios fueron subidos a la nube Supabase con éxito (${now}).`, 'success');
+      saveLocal('last_sync_time', now);
+      if (isManual) {
+        showToast(`☁️ ¡Sincronizado! ${syncedCount} cambios guardados en la nube (${now}).`, 'success');
+      }
     }
-    if (failedItems.length > 0) {
-      showToast(`Aviso: ${failedItems.length} cambios no se pudieron subir por inestabilidad de red. Se conservan en cola.`, 'warning');
-    }
-  };
+  }, []);
 
-  // Helper para encolar o enviar directamente a Supabase
-  const pushToCloud = async (table, action, data, id = null, description = '') => {
-    // Si no hay Supabase o estamos offline, encolar de inmediato
+  // Helper para enviar a Supabase de inmediato o encolar en memoria local
+  const pushToCloud = async (table, action, data, id = null, description = '', options = null) => {
     if (!isConfigured || !supabase || !navigator.onLine) {
-      setSyncQueue((prev) => [
-        ...prev,
-        {
-          id: `queue-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          table,
-          action,
-          data,
-          id,
-          description: description || `${action.toUpperCase()} en ${table}`,
-          timestamp: Date.now(),
-        },
-      ]);
+      // Guardar en cola para cuando regrese el internet
+      setSyncQueue((prev) => {
+        const updated = [
+          ...prev,
+          {
+            queueId: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            table,
+            action,
+            data,
+            id,
+            options,
+            description: description || `${action.toUpperCase()} en ${table}`,
+            timestamp: Date.now(),
+          },
+        ];
+        saveLocal('sync_queue', updated);
+        return updated;
+      });
       return;
     }
 
     try {
       if (action === 'upsert') {
-        await supabase.from(table).upsert(data);
+        const { error } = options
+          ? await supabase.from(table).upsert(data, options)
+          : await supabase.from(table).upsert(data);
+        if (error) throw error;
       } else if (action === 'insert') {
-        await supabase.from(table).insert(data);
+        const { error } = await supabase.from(table).insert(data);
+        if (error) throw error;
       } else if (action === 'delete') {
-        await supabase.from(table).delete().eq('id', id);
+        const { error } = await supabase.from(table).delete().eq('id', id);
+        if (error) throw error;
       }
-      setLastSyncTime(new Date().toLocaleTimeString('es-VE'));
+
+      const now = new Date().toLocaleTimeString('es-VE');
+      setLastSyncTime(now);
+      saveLocal('last_sync_time', now);
+      setConnectedToSupabase(true);
     } catch (err) {
-      console.warn(`Fallo de conexión temporal con Supabase. Guardado en cola para autorizar y subir:`, err);
-      setSyncQueue((prev) => [
-        ...prev,
-        {
-          id: `queue-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          table,
-          action,
-          data,
-          id,
-          description: description || `${action.toUpperCase()} en ${table}`,
-          timestamp: Date.now(),
-        },
-      ]);
+      console.warn(`Aviso de red al enviar [${table}]. Se guarda en cola local de contingencia:`, err.message || err);
+      setSyncQueue((prev) => {
+        const updated = [
+          ...prev,
+          {
+            queueId: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            table,
+            action,
+            data,
+            id,
+            options,
+            description: description || `${action.toUpperCase()} en ${table}`,
+            timestamp: Date.now(),
+          },
+        ];
+        saveLocal('sync_queue', updated);
+        return updated;
+      });
     }
   };
 
-  // Carga inicial y reconciliación desde Supabase si hay señal
+  // MONITOREO DE RED Y SINCRONIZACIÓN AUTOMÁTICA EN SEGUNDO PLANO
   useEffect(() => {
-    if (!isConfigured || !supabase) return;
+    // 1. Carga inicial
+    fetchFromSupabase(false);
+    syncBcvRate(false);
 
-    const fetchFromSupabase = async () => {
-      setIsSyncing(true);
-      try {
-        const { data: remotePatients, error: patErr } = await supabase.from('patients').select('*');
-        if (!patErr && remotePatients && remotePatients.length > 0) {
-          setPatients(remotePatients);
-          setConnectedToSupabase(true);
-        }
+    // 2. Reconexión a Internet
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncBcvRate(false);
+      flushSyncQueue(false);
+      fetchFromSupabase(true);
+      showToast('⚡ Conexión a internet restablecida. Nube conectada.', 'success');
+    };
 
-        const { data: remoteAppointments } = await supabase.from('appointments').select('*');
-        if (remoteAppointments && remoteAppointments.length > 0) {
-          setAppointments(remoteAppointments);
-        }
+    const handleOffline = () => {
+      setIsOnline(false);
+      showToast('⚠️ Sin internet. Modo local seguro: tus registros se guardan en este dispositivo.', 'warning');
+    };
 
-        const { data: remoteSettings } = await supabase.from('clinic_settings').select('*').limit(1).maybeSingle();
-        if (remoteSettings) {
-          setSettings(remoteSettings);
-        }
-
-        setLastSyncTime(new Date().toLocaleTimeString('es-VE'));
-      } catch (err) {
-        console.warn('Nota: Trabajando en modo local sincronizado. Supabase no respondió:', err);
-      } finally {
-        setIsSyncing(false);
+    // 3. Cuando la doctora cambia de pestaña o desbloquea el teléfono (visibilitychange / focus)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        fetchFromSupabase(true);
+        flushSyncQueue(false);
       }
     };
 
-    if (navigator.onLine) {
-      fetchFromSupabase();
-    }
-  }, []);
-
-  // PACIENTES (CRUD con Doble Guardado)
-  const addPatient = async (patientData) => {
-    const newPatient = {
-      id: `pat-${Date.now()}`,
-      ...patientData,
-      access_code: patientData.access_code || patientData.document_id.slice(-4),
-      created_at: new Date().toISOString(),
+    const handleWindowFocus = () => {
+      if (navigator.onLine) {
+        fetchFromSupabase(true);
+      }
     };
 
-    // 1. Guardar local primero (¡Instantáneo!)
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+
+    // 4. Polling periódico silencioso (cada 30 segundos) para mantener teléfono y PC al día
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        fetchFromSupabase(true);
+      }
+    }, 30 * 1000);
+
+    // 5. Polling de Tasa BCV (cada 15 minutos)
+    const bcvInterval = setInterval(() => {
+      if (navigator.onLine) {
+        syncBcvRate(false);
+      }
+    }, 15 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+      clearInterval(pollInterval);
+      clearInterval(bcvInterval);
+    };
+  }, [fetchFromSupabase, flushSyncQueue, syncBcvRate]);
+
+  // PACIENTES (CRUD con Doble Guardado Multi-Dispositivo)
+  const addPatient = async (patientData) => {
+    const rawId = patientData.id || generateUUID();
+    const id = ensureUUID(rawId);
+
+    const newPatient = {
+      ...patientData,
+      id,
+      access_code: String(patientData.access_code || patientData.document_id?.slice(-4) || '1234').trim(),
+      created_at: patientData.created_at || new Date().toISOString(),
+    };
+
+    // 1. Guardar local primero (Instantáneo)
     setPatients((prev) => [newPatient, ...prev]);
     setActivePatientId(newPatient.id);
-    showToast(`Paciente ${newPatient.full_name} guardado en memoria local.`);
+    showToast(`Paciente ${newPatient.full_name} guardado con éxito.`);
 
-    // 2. Subir a la nube / Encolar si no hay luz o internet
-    await pushToCloud('patients', 'insert', [newPatient], newPatient.id);
+    // 2. Subir a Supabase
+    const serialized = patientAdapter.serialize(newPatient);
+    await pushToCloud('patients', 'upsert', [serialized], id, `Crear paciente: ${newPatient.full_name}`);
     return newPatient;
   };
 
   const updatePatient = async (id, updatedFields) => {
-    setPatients((prev) =>
-      prev.map((pat) => (pat.id === id ? { ...pat, ...updatedFields } : pat))
-    );
-    showToast('Ficha de paciente actualizada en memoria.');
+    const validId = ensureUUID(id);
+    let fullPatient = null;
 
-    const patientObj = patients.find((p) => p.id === id);
-    await pushToCloud('patients', 'upsert', [{ ...patientObj, ...updatedFields }], id);
+    setPatients((prev) =>
+      prev.map((pat) => {
+        if (pat.id === id || pat.id === validId) {
+          fullPatient = { ...pat, ...updatedFields, id: validId };
+          return fullPatient;
+        }
+        return pat;
+      })
+    );
+
+    showToast('Ficha de paciente actualizada.');
+
+    if (fullPatient) {
+      const serialized = patientAdapter.serialize(fullPatient);
+      await pushToCloud('patients', 'upsert', [serialized], validId, `Actualizar paciente: ${fullPatient.full_name}`);
+    }
   };
 
   const deletePatient = async (id) => {
@@ -370,13 +577,15 @@ export const DentalProvider = ({ children }) => {
       setActivePatientId(remaining[0]?.id || null);
     }
     showToast('Paciente eliminado del sistema.', 'warning');
-    await pushToCloud('patients', 'delete', null, id);
+    await pushToCloud('patients', 'delete', null, id, `Eliminar paciente #${id}`);
   };
 
-  // ODONTOGRAMA (Doble Guardado)
+  // ODONTOGRAMA (Doble Guardado con Constraint Supabase)
   const updateToothInOdontogram = async (patientId, toothNumber, { faces, overall_status, notes }) => {
+    const validPatId = ensureUUID(patientId);
+
     setOdontograms((prev) => {
-      const patientOdonto = prev[patientId] || {};
+      const patientOdonto = prev[validPatId] || prev[patientId] || {};
       const currentTooth = patientOdonto[toothNumber] || { faces: {}, overall_status: 'sano', notes: '' };
 
       const updatedTooth = {
@@ -388,7 +597,7 @@ export const DentalProvider = ({ children }) => {
 
       return {
         ...prev,
-        [patientId]: {
+        [validPatId]: {
           ...patientOdonto,
           [toothNumber]: updatedTooth,
         },
@@ -397,88 +606,113 @@ export const DentalProvider = ({ children }) => {
 
     showToast(`Diente #${toothNumber} guardado en odontograma.`);
 
-    await pushToCloud('odontograms', 'upsert', {
-      patient_id: patientId,
-      tooth_number: Number(toothNumber),
-      faces,
-      overall_status,
-      notes,
+    const toothData = {
+      faces: faces !== undefined ? faces : {},
+      overall_status: overall_status || 'sano',
+      notes: notes || '',
       updated_at: new Date().toISOString(),
-    });
+    };
+
+    const serializedOdonto = odontogramAdapter.serialize(validPatId, toothNumber, toothData);
+
+    await pushToCloud(
+      'odontograms',
+      'upsert',
+      [serializedOdonto],
+      `${validPatId}-${toothNumber}`,
+      `Odontograma diente #${toothNumber}`,
+      { onConflict: 'patient_id,tooth_number' }
+    );
   };
 
   // HISTORIAS CLÍNICAS (Doble Guardado)
   const addClinicalRecord = async (recordData) => {
+    const id = ensureUUID(recordData.id || generateUUID());
     const newRecord = {
-      id: `rec-${Date.now()}`,
       ...recordData,
-      created_at: new Date().toISOString(),
+      id,
+      patient_id: ensureUUID(recordData.patient_id),
+      created_at: recordData.created_at || new Date().toISOString(),
     };
 
     setClinicalRecords((prev) => [newRecord, ...prev]);
     showToast('Evolución y récipe médico guardados en historia.');
-    await pushToCloud('clinical_records', 'insert', [newRecord], newRecord.id);
+
+    const serialized = clinicalRecordAdapter.serialize(newRecord);
+    await pushToCloud('clinical_records', 'upsert', [serialized], id, `Evolución clínica #${id}`);
     return newRecord;
   };
 
   // RADIOGRAFÍAS Y FOTOS (Doble Guardado)
   const addRadiograph = async (radioData) => {
+    const id = ensureUUID(radioData.id || generateUUID());
     const newRadio = {
-      id: `rad-${Date.now()}`,
       ...radioData,
-      created_at: new Date().toISOString(),
+      id,
+      patient_id: ensureUUID(radioData.patient_id),
+      created_at: radioData.created_at || new Date().toISOString(),
     };
 
     setRadiographs((prev) => [newRadio, ...prev]);
     showToast('Radiografía guardada en el expediente.');
-    await pushToCloud('radiographs', 'insert', [newRadio], newRadio.id);
+
+    const serialized = radiographAdapter.serialize(newRadio);
+    await pushToCloud('radiographs', 'upsert', [serialized], id, `Radiografía #${id}`);
     return newRadio;
   };
 
   // PRESUPUESTOS Y FASES (Doble Guardado)
   const addBudget = async (budgetData) => {
+    const id = ensureUUID(budgetData.id || generateUUID());
     const newBudget = {
-      id: `bud-${Date.now()}`,
       ...budgetData,
-      created_at: new Date().toISOString(),
+      id,
+      patient_id: ensureUUID(budgetData.patient_id),
+      created_at: budgetData.created_at || new Date().toISOString(),
     };
 
     setBudgets((prev) => [newBudget, ...prev]);
     showToast('Presupuesto por fases registrado.');
-    await pushToCloud('treatment_budgets', 'insert', [newBudget], newBudget.id);
+
+    const serialized = budgetAdapter.serialize(newBudget);
+    await pushToCloud('treatment_budgets', 'upsert', [serialized], id, `Presupuesto #${id}`);
     return newBudget;
   };
 
   const updateBudget = async (budgetId, updatedFields) => {
     let fullUpdatedBudget = null;
+    const validBudgetId = ensureUUID(budgetId);
+
     setBudgets((prev) =>
       prev.map((b) => {
-        if (b.id === budgetId) {
-          fullUpdatedBudget = { ...b, ...updatedFields };
+        if (b.id === budgetId || b.id === validBudgetId) {
+          fullUpdatedBudget = { ...b, ...updatedFields, id: validBudgetId };
           return fullUpdatedBudget;
         }
         return b;
       })
     );
+
     showToast('Presupuesto actualizado con éxito.');
     if (fullUpdatedBudget) {
-      await pushToCloud('treatment_budgets', 'upsert', [fullUpdatedBudget], budgetId);
+      const serialized = budgetAdapter.serialize(fullUpdatedBudget);
+      await pushToCloud('treatment_budgets', 'upsert', [serialized], validBudgetId, `Actualizar presupuesto #${validBudgetId}`);
     }
   };
 
   const deleteBudget = async (budgetId) => {
     setBudgets((prev) => prev.filter((b) => b.id !== budgetId));
     showToast('Presupuesto eliminado.', 'warning');
-    await pushToCloud('treatment_budgets', 'delete', null, budgetId);
+    await pushToCloud('treatment_budgets', 'delete', null, budgetId, `Eliminar presupuesto #${budgetId}`);
   };
 
   const toggleBudgetItem = (budgetId, phaseId, itemIndex) => {
     setBudgets((prev) =>
       prev.map((b) => {
         if (b.id !== budgetId) return b;
-        const updatedPhases = b.phases.map((ph) => {
+        const updatedPhases = (b.phases || []).map((ph) => {
           if (ph.id !== phaseId) return ph;
-          const updatedItems = ph.items.map((it, idx) =>
+          const updatedItems = (ph.items || []).map((it, idx) =>
             idx === itemIndex ? { ...it, completed: !it.completed } : it
           );
           const allCompleted = updatedItems.every((it) => it.completed);
@@ -488,7 +722,8 @@ export const DentalProvider = ({ children }) => {
           return { ...ph, items: updatedItems, status: newStatus };
         });
         const updatedBudget = { ...b, phases: updatedPhases };
-        pushToCloud('treatment_budgets', 'upsert', [updatedBudget], budgetId);
+        const serialized = budgetAdapter.serialize(updatedBudget);
+        pushToCloud('treatment_budgets', 'upsert', [serialized], budgetId, `Actualizar fase en presupuesto #${budgetId}`);
         return updatedBudget;
       })
     );
@@ -496,13 +731,18 @@ export const DentalProvider = ({ children }) => {
 
   // PAGOS Y ABONOS (Con impacto en caja y doble guardado)
   const registerPayment = async (paymentData) => {
-    const rate = Number(settings?.usd_exchange_rate) || 883.40;
+    const rate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || CONTINGENCY_BCV_RATE);
     const amountUsd = Number(paymentData.amount_usd) || 0;
     const amountBs = paymentData.amount_bs ? Number(paymentData.amount_bs) : amountUsd * rate;
+    const payId = ensureUUID(paymentData.id || generateUUID());
+    const patientId = ensureUUID(paymentData.patient_id);
+    const budgetId = paymentData.budget_id ? ensureUUID(paymentData.budget_id) : null;
 
     const newPayment = {
-      id: `pay-${Date.now()}`,
       ...paymentData,
+      id: payId,
+      patient_id: patientId,
+      budget_id: budgetId,
       amount_usd: amountUsd,
       amount_bs: amountBs,
       exchange_rate: rate,
@@ -513,9 +753,10 @@ export const DentalProvider = ({ children }) => {
     setPayments((prev) => [newPayment, ...prev]);
 
     // Generar automáticamente el ingreso en el Cuadre de Caja Diario
-    const patientObj = patients.find((p) => p.id === paymentData.patient_id);
+    const patientObj = patients.find((p) => p.id === patientId);
+    const cashId = generateUUID();
     const newCashEntry = {
-      id: `cash-${Date.now()}`,
+      id: cashId,
       entry_date: new Date().toISOString().split('T')[0],
       type: 'ingreso',
       category: 'pago_paciente',
@@ -524,28 +765,38 @@ export const DentalProvider = ({ children }) => {
       amount_bs: amountBs,
       payment_method: paymentData.payment_method,
       reference: paymentData.reference || 'N/A',
-      related_payment_id: newPayment.id,
+      related_payment_id: payId,
+      created_at: new Date().toISOString(),
     };
 
     setCashEntries((prev) => [newCashEntry, ...prev]);
     showToast(`Abono de $${amountUsd.toFixed(2)} registrado en memoria y caja.`);
 
-    await pushToCloud('payments', 'insert', [newPayment], newPayment.id);
-    await pushToCloud('cash_register_entries', 'insert', [newCashEntry], newCashEntry.id);
+    const serializedPay = paymentAdapter.serialize(newPayment);
+    const serializedCash = cashRegisterAdapter.serialize(newCashEntry);
+
+    await pushToCloud('payments', 'upsert', [serializedPay], payId, `Abono paciente #${payId}`);
+    await pushToCloud('cash_register_entries', 'upsert', [serializedCash], cashId, `Entrada caja #${cashId}`);
     return newPayment;
   };
 
   // AGENDA Y CITAS (Doble Guardado)
   const addAppointment = async (aptData) => {
+    const aptId = ensureUUID(aptData.id || generateUUID());
+    const patientId = aptData.patient_id ? ensureUUID(aptData.patient_id) : null;
+
     const newApt = {
-      id: `apt-${Date.now()}`,
       ...aptData,
+      id: aptId,
+      patient_id: patientId,
       created_at: new Date().toISOString(),
     };
 
     setAppointments((prev) => [newApt, ...prev]);
     showToast(`Cita agendada para ${newApt.patient_name}.`);
-    await pushToCloud('appointments', 'insert', [newApt], newApt.id);
+
+    const serialized = appointmentAdapter.serialize(newApt);
+    await pushToCloud('appointments', 'upsert', [serialized], aptId, `Cita: ${newApt.patient_name}`);
     return newApt;
   };
 
@@ -554,18 +805,19 @@ export const DentalProvider = ({ children }) => {
       prev.map((apt) => (apt.id === id ? { ...apt, status } : apt))
     );
     showToast(`Cita marcada como: ${status.toUpperCase()}`);
-    await pushToCloud('appointments', 'upsert', [{ id, status }], id);
+    await pushToCloud('appointments', 'upsert', [{ id, status }], id, `Estado cita #${id}`);
   };
 
   // CUADRE DE CAJA (Egresos e Ingresos con Doble Guardado)
   const addCashEntry = async (entryData) => {
-    const rate = Number(settings?.usd_exchange_rate) || 883.40;
+    const rate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || CONTINGENCY_BCV_RATE);
     const amountUsd = Number(entryData.amount_usd) || 0;
     const amountBs = entryData.amount_bs ? Number(entryData.amount_bs) : amountUsd * rate;
+    const cashId = ensureUUID(entryData.id || generateUUID());
 
     const newEntry = {
-      id: `cash-${Date.now()}`,
       ...entryData,
+      id: cashId,
       amount_usd: amountUsd,
       amount_bs: amountBs,
       entry_date: entryData.entry_date || new Date().toISOString().split('T')[0],
@@ -574,7 +826,9 @@ export const DentalProvider = ({ children }) => {
 
     setCashEntries((prev) => [newEntry, ...prev]);
     showToast(`${newEntry.type === 'ingreso' ? 'Ingreso' : 'Egreso'} anotado en caja.`);
-    await pushToCloud('cash_register_entries', 'insert', [newEntry], newEntry.id);
+
+    const serialized = cashRegisterAdapter.serialize(newEntry);
+    await pushToCloud('cash_register_entries', 'upsert', [serialized], cashId, `Movimiento caja #${cashId}`);
     return newEntry;
   };
 
@@ -591,17 +845,32 @@ export const DentalProvider = ({ children }) => {
 
   // AJUSTES
   const updateSettings = async (newSettings) => {
-    setSettings((prev) => ({ ...prev, ...newSettings }));
+    const updated = { ...settings, ...newSettings, id: CLINIC_SETTINGS_ID };
+    setSettings(updated);
+    saveLocal('settings', updated);
     showToast('Ajustes guardados.');
-    await pushToCloud('clinic_settings', 'upsert', [{ id: settings?.id || undefined, ...newSettings }]);
+
+    await pushToCloud('clinic_settings', 'upsert', [
+      {
+        id: CLINIC_SETTINGS_ID,
+        doctor_name: updated.doctor_name,
+        doctor_specialty: updated.doctor_specialty,
+        doctor_email: updated.doctor_email,
+        clinic_name: updated.clinic_name,
+        phone: updated.phone,
+        address: updated.address,
+        usd_exchange_rate: Number(updated.usd_exchange_rate) || CONTINGENCY_BCV_RATE,
+        logo_url: updated.logo_url,
+        whatsapp_phone: updated.whatsapp_phone,
+      },
+    ], CLINIC_SETTINGS_ID, 'Actualizar ajustes del consultorio');
   };
 
   // EXPORTAR RESPALDO DE SEGURIDAD EN 1 CLIC (.JSON)
-  // Permite a la doctora guardar una copia en su pendrive o disco duro
   const exportLocalBackup = () => {
     const doctorName = settings?.doctor_name || 'Dra_Adriana_Parra';
     const backupData = {
-      version: '1.0',
+      version: '2.0',
       exported_at: new Date().toISOString(),
       doctor: doctorName,
       settings,
@@ -625,14 +894,11 @@ export const DentalProvider = ({ children }) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('📁 Respaldo completo descargado a tu computador.');
+    showToast('📁 Respaldo completo descargado a tu equipo.');
   };
 
   // VACIAR DATOS DE PRUEBA / EMPEZAR CONSULTORIO EN BLANCO
-  // Borra pacientes ficticios, citas, presupuestos y odontogramas de demostración
-  // manteniendo la configuración del consultorio (nombre, logo, WhatsApp, tasa BCV).
   const clearAllDemoData = async () => {
-    // 1. Limpiar estados en memoria
     setPatients([]);
     setActivePatientId(null);
     setOdontograms({});
@@ -644,7 +910,6 @@ export const DentalProvider = ({ children }) => {
     setCashEntries([]);
     setSyncQueue([]);
 
-    // 2. Limpiar almacenamiento local
     saveLocal('patients', []);
     saveLocal('odontograms', {});
     saveLocal('clinicalRecords', []);
@@ -655,7 +920,6 @@ export const DentalProvider = ({ children }) => {
     saveLocal('cashEntries', []);
     saveLocal('sync_queue', []);
 
-    // 3. Limpiar Supabase en la nube si está conectado
     if (isConfigured && supabase) {
       try {
         await supabase.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -728,8 +992,9 @@ export const DentalProvider = ({ children }) => {
     connectedToSupabase,
     syncQueue,
     pendingSyncCount: syncQueue.length,
-    syncPendingQueue: authorizeAndUploadPendingChanges,
-    authorizeAndUploadPendingChanges,
+    syncPendingQueue: () => flushSyncQueue(true),
+    authorizeAndUploadPendingChanges: () => flushSyncQueue(true),
+    refreshCloudData: () => fetchFromSupabase(false),
     lastSyncTime,
     exportLocalBackup,
     toast,

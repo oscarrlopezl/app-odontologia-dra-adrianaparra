@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function BudgetPhaseManager({ patientId, onOpenPaymentModal, onOpenWhatsAppBudget }) {
-  const { budgets, toggleBudgetItem, deleteBudget, payments, settings, patients } = useDental();
+  const { budgets, toggleBudgetItem, deleteBudget, payments, settings, patients, bcvInfo } = useDental();
 
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [budgetToEdit, setBudgetToEdit] = useState(null);
@@ -27,7 +27,7 @@ export default function BudgetPhaseManager({ patientId, onOpenPaymentModal, onOp
   const [budgetToDeliver, setBudgetToDeliver] = useState(null);
 
   const patientBudgets = (budgets || []).filter((b) => b && b.patient_id === patientId);
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 883.4;
+  const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
   const currentPatient = (patients || []).find((p) => p && p.id === patientId) || { id: patientId, full_name: 'Paciente' };
 
   const handleOpenCreateModal = () => {

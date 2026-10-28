@@ -54,6 +54,7 @@ function DoctorLayout({ children }) {
     logoutDoctor,
     patients,
     activePatient,
+    bcvInfo,
   } = useDental();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -100,7 +101,7 @@ function DoctorLayout({ children }) {
         <div className="flex items-center gap-1.5">
           <div className="bg-teal-950/80 border border-teal-500/40 text-teal-300 px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1">
             <span>🇻🇪</span>
-            <span>Bs.{Number(settings?.usd_exchange_rate || 883.4).toFixed(1)}</span>
+            <span>Bs.{Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30).toFixed(2)}</span>
           </div>
 
           <button

@@ -17,13 +17,13 @@ import {
 } from 'lucide-react';
 
 export default function BudgetsAndPaymentsPage() {
-  const { patients, budgets, payments, settings } = useDental();
+  const { patients, budgets, payments, settings, bcvInfo } = useDental();
   const [searchTerm, setSearchTerm] = useState('');
   const [onlyDebtors, setOnlyDebtors] = useState(false);
   const [selectedPatientForPayment, setSelectedPatientForPayment] = useState(null);
   const [deliverBudgetInfo, setDeliverBudgetInfo] = useState(null);
 
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 40.0;
+  const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
 
   // Resumen global
   const totalBudgetsUsd = budgets.reduce((acc, curr) => acc + (Number(curr.total_amount) || 0), 0);

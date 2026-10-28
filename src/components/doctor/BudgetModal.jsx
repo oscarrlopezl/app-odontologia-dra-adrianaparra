@@ -19,8 +19,8 @@ export default function BudgetModal({
   patientId,
   budgetToEdit = null,
 }) {
-  const { addBudget, updateBudget, settings } = useDental();
-  const exchangeRate = Number(settings?.usd_exchange_rate) || 883.4;
+  const { addBudget, updateBudget, settings, bcvInfo } = useDental();
+  const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
 
   const isEditing = Boolean(budgetToEdit);
 
