@@ -319,3 +319,64 @@ ${messageText || 'Esperamos que te encuentres muy bien.'}
 
 ¡Quedamos a tu entera orden para cualquier consulta! ✨`;
 }
+
+/**
+ * PLANTILLA 8: Saludo y Felicitación Navideña
+ */
+export function getChristmasGreetingText({ patient, greetingType = 'general', settings }) {
+  const doctorName = settings?.doctor_name || 'Dra. Adriana Parra';
+  const clinicName = settings?.clinic_name || 'Centro Odontológico Dra. Adriana Parra';
+  const patientName = patient?.full_name?.trim() || 'Estimado(a) Paciente';
+
+  if (greetingType === 'limpieza') {
+    return `🎄✨ *¡SONRISA RADIANTE ESTA NAVIDAD!* ✨🎄
+*${doctorName}* • ${clinicName}
+
+¡Hola *${patientName}*! 🎅
+
+En estas fiestas decembrinas, lucir una sonrisa sana y brillante es el mejor regalo.
+
+Te recordamos que tenemos cupos abiertos para tu *chequeo y limpieza dental de fin de año*. 
+
+Si deseas agendar tu cita antes del cierre de año, respóndeme a este mensaje y con gusto coordinamos tu horario.
+
+¡Te deseamos una hermosa Navidad y un próspero Año Nuevo! 🎁🦷✨
+
+*${doctorName}*
+Consultorio: Guacara / Yagua 🇻🇪`;
+  }
+
+  if (greetingType === 'blanqueamiento') {
+    return `🎁✨ *¡PROMO NAVIDEÑA DE ESTÉTICA & BLANQUEAMIENTO DENTAL!* ✨🎁
+*${doctorName}* • ${clinicName}
+
+¡Hola *${patientName}*! 🎄🎅
+
+Llegó la Navidad y queremos que recibas el Año Nuevo con tu mejor sonrisa. Tenemos una jornada especial de *Blanqueamiento y Estética Dental Navideña*.
+
+¿Te gustaría reservar una evaluación previa para lucir tus dientes resplandecientes en las fiestas?
+
+Escríbenos por aquí para darte todos los detalles y apartar tu turno.
+
+¡Feliz Navidad y bendiciones para ti y tu familia! 🌟🦷
+
+*${doctorName}*
+Odontología Especializada`;
+  }
+
+  // General por defecto
+  return `🎄✨ *¡FELIZ NAVIDAD Y PRÓSPERO AÑO NUEVO!* ✨🎄
+*${doctorName}* • ${clinicName}
+
+¡Hola *${patientName}*! 🎅
+
+De parte de todo el equipo y en especial de la *${doctorName}*, queremos desearte a ti y a tus seres queridos una Navidad llena de paz, alegría, salud y momentos inolvidables.
+
+Agradecemos profundamente tu confianza en nuestras manos para cuidar de tu salud bucal. ¡Que el nuevo año te traiga infinitos motivos para sonreír! 🌟🦷
+
+¡Un gran abrazo festivo! 🥂✨
+
+*${doctorName}*
+Guacara / Yagua, Edo. Carabobo 🇻🇪`;
+}
+

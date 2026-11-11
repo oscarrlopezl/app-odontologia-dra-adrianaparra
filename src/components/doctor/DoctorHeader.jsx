@@ -29,6 +29,9 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
     syncBcvRate,
     refreshCloudData,
     openDiagnosticModal,
+    currentTheme,
+    isChristmasTheme,
+    openThemeModal,
   } = useDental();
 
   const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
@@ -132,6 +135,20 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
               <RefreshCw className={`w-3.5 h-3.5 ${isUpdatingBcv ? 'animate-spin text-teal-600' : ''}`} />
             </button>
           </div>
+
+          {/* Botón Tema Conmemorativo por Fecha */}
+          <button
+            type="button"
+            onClick={openThemeModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-300 active:scale-95 cursor-pointer"
+            title={`Tema visual activo: ${currentTheme?.name}. Haz clic para ver y cambiar temas por calendario.`}
+          >
+            <span>{currentTheme?.emoji || '🎄'}</span>
+            <span className="hidden md:inline font-black">{currentTheme?.shortName || 'Navidad'}</span>
+            <span className="text-[10px] bg-emerald-200/90 text-emerald-950 px-1.5 py-0.2 rounded-full font-extrabold">
+              {currentTheme?.badgeText || 'Navidad 2026'}
+            </span>
+          </button>
 
           {actionButton}
         </div>

@@ -24,6 +24,8 @@ import {
   KeyRound,
   Zap,
   Heart,
+  Palette,
+  Snowflake,
 } from 'lucide-react';
 
 export default function ClinicSettingsPage() {
@@ -47,6 +49,11 @@ export default function ClinicSettingsPage() {
     lastKeepAlive,
     isSendingPulse,
     triggerKeepAlivePulse,
+    currentTheme,
+    themeMode,
+    isSnowActive,
+    toggleSnowEffect,
+    openThemeModal,
   } = useDental();
 
   const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
@@ -219,6 +226,64 @@ export default function ClinicSettingsPage() {
                 <span className="text-amber-400 font-bold">({pendingSyncCount} en cola)</span>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Personalización Visual y Temas por Fechas */}
+        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-rose-950 rounded-3xl p-6 text-white border border-emerald-500/30 shadow-xl space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Palette className="w-5 h-5 text-amber-300" />
+                <h3 className="font-extrabold text-lg">Apariencia y Temas por Calendario</h3>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                  <span>{currentTheme?.emoji || '🎄'}</span>
+                  <span>{currentTheme?.name || 'Navidad & Fin de Año'}</span>
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-amber-300 border border-white/10">
+                  {themeMode === 'auto' ? '🗓️ Automático por Fecha' : '🎨 Fijado Manual'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 max-w-xl">
+                La aplicación detecta el calendario de festividades (Navidad, San Valentín, Día del Odontólogo o Clásico Clínico) y adapta los colores, avisos y ambientación visual.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {currentTheme?.id === 'christmas' && (
+                <button
+                  type="button"
+                  onClick={toggleSnowEffect}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                    isSnowActive
+                      ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400/40 hover:bg-cyan-500/30'
+                      : 'bg-white/10 text-slate-300 border-white/20 hover:bg-white/20'
+                  }`}
+                  title="Encender o pausar la nieve flotante navideña"
+                >
+                  <Snowflake className="w-3.5 h-3.5 text-cyan-300" />
+                  <span>{isSnowActive ? 'Nieve: ON' : 'Pausar Nieve'}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={openThemeModal}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-black text-xs rounded-xl shadow-lg transition active:scale-95"
+              >
+                <Palette className="w-4 h-4" />
+                <span>Explorar Catálogo de Temas</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-300">
+            <span className="text-emerald-200">
+              Temporada actual: <strong>{currentTheme?.seasonRangeText || 'Noviembre – Enero'}</strong> ({currentTheme?.greeting})
+            </span>
+            <span className="text-slate-400">
+              Efecto de Nieve: <strong className="text-white">{isSnowActive ? 'Activada' : 'Pausada'}</strong>
+            </span>
           </div>
         </div>
 

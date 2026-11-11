@@ -26,6 +26,7 @@ import {
   initialPromotions,
 } from '../lib/mockData';
 import { fetchOfficialBcvRate, getCachedBcvRate, CONTINGENCY_BCV_RATE } from '../lib/bcvRateService';
+import { getActiveThemeConfig, saveThemePreferences, THEME_CONFIGS } from '../lib/themeService';
 import {
   generateUUID,
   ensureUUID,
@@ -173,6 +174,32 @@ export const DentalProvider = ({ children }) => {
       setIsSendingPulse(false);
     }
   }, []);
+
+  // Estado de Temas Visuales y Conmemorativos por Fecha
+  const [themeState, setThemeState] = useState(() => getActiveThemeConfig());
+  const [showThemeModal, setShowThemeModal] = useState(false);
+
+  const setThemeModeAndSelection = useCallback((mode, themeId) => {
+    saveThemePreferences({
+      mode,
+      themeId,
+      snowEnabled: themeState.isSnowActive,
+    });
+    setThemeState(getActiveThemeConfig());
+  }, [themeState.isSnowActive]);
+
+  const toggleSnowEffect = useCallback(() => {
+    const nextSnow = !themeState.isSnowActive;
+    saveThemePreferences({
+      mode: themeState.mode,
+      themeId: themeState.theme.id,
+      snowEnabled: nextSnow,
+    });
+    setThemeState((prev) => ({
+      ...prev,
+      isSnowActive: nextSnow,
+    }));
+  }, [themeState.mode, themeState.theme.id, themeState.isSnowActive]);
 
   const showToast = (message, type = 'success') => {
     setToast({ id: Date.now(), message, type });
@@ -1404,6 +1431,17 @@ export const DentalProvider = ({ children }) => {
       defaultUrl: SUPABASE_DEFAULT_URL,
       defaultKey: SUPABASE_DEFAULT_KEY,
     },
+    // Temas Visuales y Conmemorativos por Fecha
+    currentTheme: themeState.theme,
+    themeMode: themeState.mode,
+    isSnowActive: themeState.isSnowActive,
+    isChristmasTheme: themeState.isChristmas,
+    setThemeModeAndSelection,
+    toggleSnowEffect,
+    showThemeModal,
+    setShowThemeModal,
+    openThemeModal: () => setShowThemeModal(true),
+    closeThemeModal: () => setShowThemeModal(false),
     // Guardián Anti-Pausa Keep-Alive
     lastKeepAlive,
     isSendingPulse,

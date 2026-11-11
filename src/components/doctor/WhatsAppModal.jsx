@@ -27,6 +27,7 @@ import {
   getConsultationReportText,
   getMedicalJustificationText,
   getCustomMessageText,
+  getChristmasGreetingText,
   POST_TREATMENT_TYPES,
 } from '../../lib/whatsappService';
 
@@ -50,6 +51,7 @@ export default function WhatsAppModal({
   const [careType, setCareType] = useState('cirugia');
   const [customCareNotes, setCustomCareNotes] = useState('');
   const [daysOff, setDaysOff] = useState('24 horas');
+  const [christmasGreetingType, setChristmasGreetingType] = useState('general'); // 'general' | 'limpieza' | 'blanqueamiento'
 
   // Cita seleccionada (por defecto la prop o la más próxima del paciente)
   const [selectedAppointment, setSelectedAppointment] = useState(appointment);
@@ -150,6 +152,13 @@ export default function WhatsAppModal({
           settings,
         });
         setMessageText(text);
+      } else if (activeTab === 'navidad') {
+        const text = getChristmasGreetingText({
+          patient,
+          greetingType: christmasGreetingType,
+          settings,
+        });
+        setMessageText(text);
       } else if (activeTab === 'libre') {
         const text = getCustomMessageText({
           patient,
@@ -162,7 +171,7 @@ export default function WhatsAppModal({
       console.warn('Error generando plantilla de WhatsApp:', err);
       setMessageText(`🦷 Hola ${patient?.full_name || 'Paciente'}, le escribe el consultorio de la Dra. Adriana Parra.`);
     }
-  }, [activeTab, careType, customCareNotes, daysOff, selectedAppointment, selectedBudget, consultationRecord, patient, settings, isOpen, clinicalRecords]);
+  }, [activeTab, careType, customCareNotes, daysOff, selectedAppointment, selectedBudget, consultationRecord, patient, settings, isOpen, clinicalRecords, christmasGreetingType]);
 
   if (!isOpen || !patient) return null;
 
@@ -342,6 +351,19 @@ export default function WhatsAppModal({
 
           <button
             type="button"
+            onClick={() => setActiveTab('navidad')}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-t-xl text-xs font-bold transition whitespace-nowrap border-b-2 ${
+              activeTab === 'navidad'
+                ? 'border-emerald-600 text-emerald-800 bg-emerald-100/80 shadow-2xs'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <span>🎄</span>
+            <span>Navidad 2026</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('libre')}
             className={`flex items-center gap-2 px-3.5 py-2.5 rounded-t-xl text-xs font-bold transition whitespace-nowrap border-b-2 ${
               activeTab === 'libre'
@@ -356,6 +378,71 @@ export default function WhatsAppModal({
 
         {/* Controles Dinámicos según la plantilla */}
         <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+          {/* Selector de Mensaje Navideño */}
+          {activeTab === 'navidad' && (
+            <div className="p-4 bg-gradient-to-r from-emerald-50 via-rose-50 to-amber-50 border border-emerald-200 rounded-2xl space-y-3">
+              <label className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
+                <span>🎄</span>
+                <span>Selecciona el Modelo de Felicitación Navideña:</span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setChristmasGreetingType('general')}
+                  className={`p-2.5 rounded-xl border text-left transition text-xs font-bold ${
+                    christmasGreetingType === 'general'
+                      ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>🎅</span>
+                    <span>Deseo Navideño</span>
+                  </div>
+                  <p className={`text-[10px] mt-1 font-normal ${christmasGreetingType === 'general' ? 'text-emerald-100' : 'text-slate-500'}`}>
+                    Bendiciones, paz y sonrisas para toda la familia.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setChristmasGreetingType('limpieza')}
+                  className={`p-2.5 rounded-xl border text-left transition text-xs font-bold ${
+                    christmasGreetingType === 'limpieza'
+                      ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>🦷</span>
+                    <span>Limpieza Fin de Año</span>
+                  </div>
+                  <p className={`text-[10px] mt-1 font-normal ${christmasGreetingType === 'limpieza' ? 'text-emerald-100' : 'text-slate-500'}`}>
+                    Recordatorio de profilaxis antes de cerrar el año.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setChristmasGreetingType('blanqueamiento')}
+                  className={`p-2.5 rounded-xl border text-left transition text-xs font-bold ${
+                    christmasGreetingType === 'blanqueamiento'
+                      ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>🎁</span>
+                    <span>Promo Blanqueamiento</span>
+                  </div>
+                  <p className={`text-[10px] mt-1 font-normal ${christmasGreetingType === 'blanqueamiento' ? 'text-emerald-100' : 'text-slate-500'}`}>
+                    Estética dental especial para lucir en Año Nuevo.
+                  </p>
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* Selector para Cuidados Post-Tratamiento */}
           {activeTab === 'cuidados' && (

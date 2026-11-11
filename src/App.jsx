@@ -13,7 +13,10 @@ import ClinicSettingsPage from './pages/doctor/ClinicSettingsPage';
 import DoctorLoginScreen from './components/doctor/DoctorLoginScreen';
 import PwaInstallPrompt from './components/common/PwaInstallPrompt';
 import SupabaseSyncDiagnosticModal from './components/doctor/SupabaseSyncDiagnosticModal';
-import { CheckCircle2, AlertTriangle, Info, Menu, Lock } from 'lucide-react';
+import SnowEffect from './components/common/SnowEffect';
+import SeasonalThemeBanner from './components/common/SeasonalThemeBanner';
+import ThemeSelectorModal from './components/common/ThemeSelectorModal';
+import { CheckCircle2, AlertTriangle, Info, Menu, Lock, Palette } from 'lucide-react';
 
 function ToastContainer() {
   const { toast } = useDental();
@@ -60,20 +63,30 @@ function DoctorLayout({ children }) {
     openDiagnosticModal,
     showDiagnosticModal,
     closeDiagnosticModal,
+    currentTheme,
+    isSnowActive,
+    isChristmasTheme,
+    openThemeModal,
+    showThemeModal,
+    closeThemeModal,
   } = useDental();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showQuickMobileWhatsApp, setShowQuickMobileWhatsApp] = useState(false);
+  const [showHolidayWhatsApp, setShowHolidayWhatsApp] = useState(false);
 
   if (!isDoctorAuthenticated) {
     return <DoctorLoginScreen />;
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50 font-sans text-slate-800">
+    <div className={`flex flex-col md:flex-row min-h-screen bg-slate-50 font-sans text-slate-800 relative theme-${currentTheme?.id || 'christmas'}`}>
+      {/* Efecto de Nieve Flotante en Temporada Navideña */}
+      <SnowEffect isEnabled={isSnowActive && isChristmasTheme} />
+
       {/* 1. Barra Superior Móvil (Solo en teléfonos / pantallas pequeñas) */}
-      <header className="md:hidden sticky top-0 z-40 bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between border-b border-slate-800 shadow-md">
-        <div className="flex items-center gap-2.5">
+      <header className="md:hidden sticky top-0 z-40 bg-slate-900 text-white px-3.5 py-2.5 flex items-center justify-between border-b border-slate-800 shadow-md">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
@@ -84,7 +97,12 @@ function DoctorLayout({ children }) {
           </button>
 
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-white p-0.5 flex items-center justify-center shrink-0">
+            <div className="relative w-7 h-7 rounded-lg bg-white p-0.5 flex items-center justify-center shrink-0">
+              {isChristmasTheme && (
+                <span className="absolute -top-2.5 -right-1 text-sm select-none pointer-events-none transform rotate-12" title="¡Feliz Navidad!">
+                  🎅
+                </span>
+              )}
               <img
                 src={settings?.logo_url || '/logo-dra-adrianaparra.png'}
                 alt="Logo"
@@ -92,8 +110,8 @@ function DoctorLayout({ children }) {
               />
             </div>
             <div className="leading-tight min-w-0">
-              <h2 className="font-extrabold text-xs text-white truncate">
-                {settings?.doctor_name || 'Dra. Adriana Parra'}
+              <h2 className="font-extrabold text-xs text-white truncate flex items-center gap-1">
+                <span>{settings?.doctor_name || 'Dra. Adriana Parra'}</span>
               </h2>
               <p className="text-[10px] text-teal-400 font-semibold truncate">
                 Odontología Especializada
@@ -102,8 +120,18 @@ function DoctorLayout({ children }) {
           </div>
         </div>
 
-        {/* Indicadores en Barra Móvil: Tasa BCV, Estado Supabase y Bloqueo */}
+        {/* Indicadores en Barra Móvil: Botón Tema, Tasa BCV, Estado Supabase y Bloqueo */}
         <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={openThemeModal}
+            className="bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-95 transition"
+            title="Cambiar tema conmemorativo"
+          >
+            <span>{currentTheme?.emoji || '🎄'}</span>
+            <span className="hidden xs:inline">{currentTheme?.shortName || 'Navidad'}</span>
+          </button>
+
           {!connectedToSupabase && (
             <button
               onClick={openDiagnosticModal}
@@ -137,8 +165,14 @@ function DoctorLayout({ children }) {
         onClose={() => setMobileMenuOpen(false)}
       />
 
-      {/* 3. Área de Contenido Principal con Banner de Sincronización y Padding para barra móvil */}
+      {/* 3. Área de Contenido Principal con Banner Conmemorativo y Banner de Sincronización */}
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-0">
+        {/* Banner Conmemorativo de Temporada (Navidad & Fin de Año) */}
+        <SeasonalThemeBanner
+          onOpenThemeSelector={openThemeModal}
+          onOpenWhatsAppGreeting={() => setShowHolidayWhatsApp(true)}
+        />
+
         {/* Banner de Modo Sin Señal / Autorización de Subida a la Nube */}
         <OfflineSyncAuthorizationBanner />
 
@@ -159,6 +193,22 @@ function DoctorLayout({ children }) {
           initialTab="cita"
         />
       )}
+
+      {/* Modal de Felicitación Navideña WhatsApp */}
+      {showHolidayWhatsApp && (
+        <WhatsAppModal
+          isOpen={showHolidayWhatsApp}
+          onClose={() => setShowHolidayWhatsApp(false)}
+          patient={activePatient || patients?.[0] || { full_name: 'Estimado Paciente', phone: '' }}
+          initialTab="navidad"
+        />
+      )}
+
+      {/* Modal de Selector de Temas Visuales y Conmemorativos */}
+      <ThemeSelectorModal
+        isOpen={showThemeModal}
+        onClose={closeThemeModal}
+      />
 
       {/* Modal de Diagnóstico de Supabase y Sincronización */}
       <SupabaseSyncDiagnosticModal

@@ -34,6 +34,9 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
     refreshCloudData,
     openDiagnosticModal,
     isSyncing,
+    currentTheme,
+    isChristmasTheme,
+    openThemeModal,
   } = useDental();
   const [showGlobalWhatsappModal, setShowGlobalWhatsappModal] = useState(false);
   const [targetPatient, setTargetPatient] = useState(null);
@@ -53,9 +56,18 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
   const sidebarContent = (
     <>
       <div>
-        {/* Logo y Branding del Consultorio */}
+        {/* Logo y Branding del Consultorio con Decoración Navideña Conmemorativa */}
         <div className="p-4 border-b border-slate-800">
-          <div className="bg-white rounded-2xl p-3 shadow-md flex flex-col items-center justify-center">
+          <div className="relative bg-white rounded-2xl p-3 shadow-md flex flex-col items-center justify-center">
+            {isChristmasTheme && (
+              <span
+                className="absolute -top-3.5 -right-2 text-2xl select-none pointer-events-none transform rotate-12 drop-shadow-md animate-bounce"
+                title="¡Feliz Navidad Dra. Adriana Parra!"
+                style={{ animationDuration: '3s' }}
+              >
+                🎅
+              </span>
+            )}
             <img
               src={settings?.logo_url || "/logo-dra-adrianaparra.png"}
               alt="Dra. Adriana Parra - Odontología Especializada"
@@ -70,6 +82,31 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
               Odontología Especializada
             </p>
           </div>
+        </div>
+
+        {/* Acceso Rápido al Tema Conmemorativo por Fecha */}
+        <div className="mx-4 mt-3">
+          <button
+            type="button"
+            onClick={openThemeModal}
+            className="w-full p-2.5 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-rose-950 border border-emerald-500/30 text-white flex items-center justify-between text-xs hover:border-emerald-400/60 transition group active:scale-98"
+            title="Ver temas festivos y conmemorativos"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-xl group-hover:scale-110 transition">{currentTheme?.emoji || '🎄'}</span>
+              <div className="text-left leading-tight">
+                <span className="block font-black text-[11px] text-amber-300">
+                  {currentTheme?.name || 'Navidad & Fin de Año'}
+                </span>
+                <span className="block text-[9px] text-emerald-300 font-medium">
+                  {currentTheme?.badgeText || 'Navidad 2026'}
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] text-slate-300 bg-white/10 px-2 py-0.5 rounded-lg font-mono">
+              🎨
+            </span>
+          </button>
         </div>
 
         {/* Estado de Supabase y Sincronización Automática */}
