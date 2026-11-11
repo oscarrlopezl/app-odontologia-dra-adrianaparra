@@ -20,7 +20,8 @@ import {
   WifiOff,
   Activity,
   Clock,
-  Heart
+  Heart,
+  Trash2
 } from 'lucide-react';
 
 export default function SupabaseSyncDiagnosticModal({ isOpen, onClose }) {
@@ -46,6 +47,7 @@ export default function SupabaseSyncDiagnosticModal({ isOpen, onClose }) {
     lastKeepAlive,
     isSendingPulse,
     triggerKeepAlivePulse,
+    purgeAllMockDemoData,
   } = useDental();
 
   const [isTesting, setIsTesting] = useState(false);
@@ -544,6 +546,23 @@ export default function SupabaseSyncDiagnosticModal({ isOpen, onClose }) {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                if (window.confirm('¿Deseas eliminar pacientes de prueba y sincronizar únicamente con tu base de datos real de Supabase?')) {
+                  purgeAllMockDemoData({ notify: true });
+                  if (connectedToSupabase) {
+                    await refreshCloudData();
+                  }
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-xl text-xs font-bold transition shadow-2xs"
+              title="Eliminar pacientes ficticios de prueba locales"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              <span>Limpiar Pruebas</span>
+            </button>
+
             {connectedToSupabase && (
               <button
                 onClick={handleSyncAll}

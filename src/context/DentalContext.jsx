@@ -53,19 +53,101 @@ export const useDental = () => {
 };
 
 // Helper universal de fusión por ID que previene borrado accidental de registros creados offline
+export function isMockDemoEntity(item) {
+  if (!item) return false;
+  const id = String(item.id || '');
+  if (
+    id.startsWith('pat-') ||
+    id.startsWith('apt-') ||
+    id.startsWith('bud-') ||
+    id.startsWith('rec-') ||
+    id.startsWith('pay-') ||
+    id.startsWith('cash-') ||
+    id.startsWith('rad-') ||
+    id.startsWith('phase-') ||
+    id === 'pat-1' || id === 'pat-2' || id === 'pat-3' || id === 'pat-4' || id === 'pat-5'
+  ) {
+    return true;
+  }
+
+  // Si está vinculado a un ID demo
+  if (item.patient_id) {
+    const pId = String(item.patient_id);
+    if (pId.startsWith('pat-') || ['pat-1', 'pat-2', 'pat-3', 'pat-4', 'pat-5'].includes(pId)) {
+      return true;
+    }
+  }
+  if (item.budget_id) {
+    const bId = String(item.budget_id);
+    if (bId.startsWith('bud-')) return true;
+  }
+
+  // Nombres conocidos de pacientes ficticios de demostración
+  const rawName = String(item.full_name || item.patient_name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const mockNames = [
+    'carlos mendoza',
+    'carlos alberto mendez lugo',
+    'carlos alberto méndez lugo',
+    'carlos mendez',
+    'carlos méndez',
+    'valentina castillo',
+    'valentina sofía rivas gómez',
+    'valentina sofia rivas gomez',
+    'valentina rivas',
+    'andrés eloy blanco',
+    'andres eloy blanco',
+    'mariana rivas',
+    'josé gregorio hernández',
+    'jose gregorio hernandez',
+    'josé gregorio salazar peña',
+    'jose gregorio salazar pena',
+    'josé gregorio salazar',
+    'jose gregorio salazar',
+  ];
+  if (rawName && mockNames.includes(rawName)) {
+    return true;
+  }
+
+  // Cédulas de demostración
+  const docId = String(item.document_id || '').trim().toUpperCase();
+  const mockDocs = [
+    'V-19842135',
+    '19842135',
+    'V-24512987',
+    '24512987',
+    'V-15789423',
+    '15789423',
+    'V-18765432',
+    '18765432',
+    'V-24567890',
+    '24567890',
+    'V-14234567',
+    '14234567',
+    'V-26789123',
+    '26789123',
+    'V-12987654',
+    '12987654',
+  ];
+  if (docId && mockDocs.includes(docId)) {
+    return true;
+  }
+
+  return false;
+}
+
 function mergeEntityList(localList, remoteList, idField = 'id') {
   const map = new Map();
 
-  // 1. Añadir remotos
+  // 1. Añadir remotos (descartando cualquier dato ficticio de prueba)
   for (const item of remoteList || []) {
-    if (item && item[idField]) {
+    if (item && item[idField] && !isMockDemoEntity(item)) {
       map.set(item[idField], item);
     }
   }
 
-  // 2. Fusionar locales (si no está en remoto, conservarlo siempre)
+  // 2. Fusionar locales legítimos creados offline (descartando cualquier demo)
   for (const item of localList || []) {
-    if (item && item[idField]) {
+    if (item && item[idField] && !isMockDemoEntity(item)) {
       const existing = map.get(item[idField]);
       if (!existing) {
         map.set(item[idField], item);
@@ -99,7 +181,66 @@ export const DentalProvider = ({ children }) => {
     }
   };
 
-  // Estados principales
+  // Carga defensiva y saneamiento de listas locales (depura residuos ficticios)
+  const loadCleanLocalList = (key) => {
+    try {
+      const stored = localStorage.getItem(`dra_parra_${key}`);
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [];
+      const clean = parsed.filter((item) => !isMockDemoEntity(item));
+      if (clean.length !== parsed.length) {
+        localStorage.setItem(`dra_parra_${key}`, JSON.stringify(clean));
+      }
+      return clean;
+    } catch {
+      return [];
+    }
+  };
+
+  const loadCleanLocalOdontograms = () => {
+    try {
+      const stored = localStorage.getItem('dra_parra_odontograms');
+      if (!stored) return {};
+      const parsed = JSON.parse(stored);
+      if (!parsed || typeof parsed !== 'object') return {};
+      const clean = {};
+      for (const [pId, teeth] of Object.entries(parsed)) {
+        if (!pId.startsWith('pat-') && !['pat-1', 'pat-2', 'pat-3', 'pat-4', 'pat-5'].includes(pId)) {
+          clean[pId] = teeth;
+        }
+      }
+      if (Object.keys(clean).length !== Object.keys(parsed).length) {
+        localStorage.setItem('dra_parra_odontograms', JSON.stringify(clean));
+      }
+      return clean;
+    } catch {
+      return {};
+    }
+  };
+
+  const loadCleanSyncQueue = () => {
+    try {
+      const stored = localStorage.getItem('dra_parra_sync_queue');
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [];
+      const clean = parsed.filter((item) => {
+        if (!item) return false;
+        if (item.id && isMockDemoEntity({ id: item.id })) return false;
+        if (item.data && isMockDemoEntity(item.data)) return false;
+        return true;
+      });
+      if (clean.length !== parsed.length) {
+        localStorage.setItem('dra_parra_sync_queue', JSON.stringify(clean));
+      }
+      return clean;
+    } catch {
+      return [];
+    }
+  };
+
+  // Estados principales (comienzan limpios con datos reales o vacíos para registro de cero)
   const [settings, setSettings] = useState(() => {
     const loaded = loadLocal('settings', initialClinicSettings);
     if (!loaded.usd_exchange_rate || Number(loaded.usd_exchange_rate) < 50) {
@@ -108,22 +249,22 @@ export const DentalProvider = ({ children }) => {
     return loaded;
   });
 
-  const [patients, setPatients] = useState(() => loadLocal('patients', initialPatients));
-  const [odontograms, setOdontograms] = useState(() => loadLocal('odontograms', initialOdontograms));
-  const [clinicalRecords, setClinicalRecords] = useState(() => loadLocal('clinicalRecords', initialClinicalRecords));
-  const [radiographs, setRadiographs] = useState(() => loadLocal('radiographs', initialRadiographs));
-  const [budgets, setBudgets] = useState(() => loadLocal('budgets', initialBudgets));
-  const [payments, setPayments] = useState(() => loadLocal('payments', initialPayments));
-  const [appointments, setAppointments] = useState(() => loadLocal('appointments', initialAppointments));
-  const [cashEntries, setCashEntries] = useState(() => loadLocal('cashEntries', initialCashEntries));
+  const [patients, setPatients] = useState(() => loadCleanLocalList('patients'));
+  const [odontograms, setOdontograms] = useState(() => loadCleanLocalOdontograms());
+  const [clinicalRecords, setClinicalRecords] = useState(() => loadCleanLocalList('clinicalRecords'));
+  const [radiographs, setRadiographs] = useState(() => loadCleanLocalList('radiographs'));
+  const [budgets, setBudgets] = useState(() => loadCleanLocalList('budgets'));
+  const [payments, setPayments] = useState(() => loadCleanLocalList('payments'));
+  const [appointments, setAppointments] = useState(() => loadCleanLocalList('appointments'));
+  const [cashEntries, setCashEntries] = useState(() => loadCleanLocalList('cashEntries'));
   const [promotions, setPromotions] = useState(() => loadLocal('promotions', initialPromotions));
 
   // Cola de sincronización pendiente
-  const [syncQueue, setSyncQueue] = useState(() => loadLocal('sync_queue', []));
+  const [syncQueue, setSyncQueue] = useState(() => loadCleanSyncQueue());
 
   // Estados de interfaz y conectividad
   const [activePatientId, setActivePatientId] = useState(() => {
-    const loadedPatients = loadLocal('patients', initialPatients);
+    const loadedPatients = loadCleanLocalList('patients');
     return loadedPatients[0]?.id || null;
   });
 
@@ -232,25 +373,112 @@ export const DentalProvider = ({ children }) => {
     }
   });
 
-  const loginDoctor = (pin, remember = false) => {
-    const validPin = String(settings?.doctor_pin || '1234').trim();
-    const inputPin = String(pin).trim();
+  // PURGA COMPLETA DE PACIENTES Y REGISTROS DE PRUEBA (SOLO DEMOS, NUNCA PACIENTES REALES)
+  const purgeAllMockDemoData = useCallback((options = { notify: false }) => {
+    // 1. Limpiar estados reactivos en memoria
+    setPatients((prev) => {
+      const clean = (prev || []).filter((p) => !isMockDemoEntity(p));
+      saveLocal('patients', clean);
+      return clean;
+    });
 
-    if (inputPin === validPin || inputPin === '1234' || inputPin === 'admin') {
-      setIsDoctorAuthenticated(true);
-      try {
-        sessionStorage.setItem('dra_parra_doctor_auth', 'true');
-        if (remember) {
-          localStorage.setItem('dra_parra_doctor_auth', 'true');
+    setBudgets((prev) => {
+      const clean = (prev || []).filter((b) => !isMockDemoEntity(b));
+      saveLocal('budgets', clean);
+      return clean;
+    });
+
+    setClinicalRecords((prev) => {
+      const clean = (prev || []).filter((r) => !isMockDemoEntity(r));
+      saveLocal('clinicalRecords', clean);
+      return clean;
+    });
+
+    setRadiographs((prev) => {
+      const clean = (prev || []).filter((r) => !isMockDemoEntity(r));
+      saveLocal('radiographs', clean);
+      return clean;
+    });
+
+    setAppointments((prev) => {
+      const clean = (prev || []).filter((a) => !isMockDemoEntity(a));
+      saveLocal('appointments', clean);
+      return clean;
+    });
+
+    setPayments((prev) => {
+      const clean = (prev || []).filter((p) => !isMockDemoEntity(p));
+      saveLocal('payments', clean);
+      return clean;
+    });
+
+    setCashEntries((prev) => {
+      const clean = (prev || []).filter((c) => !isMockDemoEntity(c));
+      saveLocal('cashEntries', clean);
+      return clean;
+    });
+
+    setOdontograms((prev) => {
+      const clean = {};
+      if (prev && typeof prev === 'object') {
+        for (const [pId, teeth] of Object.entries(prev)) {
+          if (!pId.startsWith('pat-') && !['pat-1', 'pat-2', 'pat-3', 'pat-4', 'pat-5'].includes(pId)) {
+            clean[pId] = teeth;
+          }
         }
-      } catch (e) {
-        // ignore
       }
-      showToast('¡Bienvenida, Dra. Adriana Parra!', 'success');
-      return { success: true };
+      saveLocal('odontograms', clean);
+      return clean;
+    });
+
+    setSyncQueue((prev) => {
+      const clean = (prev || []).filter((item) => {
+        if (!item) return false;
+        if (item.id && isMockDemoEntity({ id: item.id })) return false;
+        if (item.data && isMockDemoEntity(item.data)) return false;
+        return true;
+      });
+      saveLocal('sync_queue', clean);
+      return clean;
+    });
+
+    setActivePatientId((curr) => (!curr || String(curr).startsWith('pat-') || isMockDemoEntity({ id: curr }) ? null : curr));
+
+    // 2. Limpieza exhaustiva en localStorage
+    try {
+      ['patients', 'budgets', 'clinicalRecords', 'radiographs', 'appointments', 'payments', 'cashEntries'].forEach((k) => {
+        const raw = localStorage.getItem(`dra_parra_${k}`);
+        if (raw) {
+          try {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) {
+              const cleanArr = arr.filter((x) => !isMockDemoEntity(x));
+              localStorage.setItem(`dra_parra_${k}`, JSON.stringify(cleanArr));
+            }
+          } catch {}
+        }
+      });
+      const rawO = localStorage.getItem('dra_parra_odontograms');
+      if (rawO) {
+        try {
+          const obj = JSON.parse(rawO);
+          const cleanO = {};
+          for (const [pId, teeth] of Object.entries(obj || {})) {
+            if (!pId.startsWith('pat-') && !['pat-1', 'pat-2', 'pat-3', 'pat-4', 'pat-5'].includes(pId)) {
+              cleanO[pId] = teeth;
+            }
+          }
+          localStorage.setItem('dra_parra_odontograms', JSON.stringify(cleanO));
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('Error purgando localStorage:', e);
     }
-    return { success: false, error: 'Clave de acceso incorrecta.' };
-  };
+
+    if (options && options.notify) {
+      showToast('🧹 Pacientes de prueba eliminados. Consultorio limpio y listo.', 'info');
+    }
+  }, []);
 
   const logoutDoctor = () => {
     setIsDoctorAuthenticated(false);
@@ -590,8 +818,61 @@ export const DentalProvider = ({ children }) => {
     }
   }, [currentSupabase]);
 
+  // INICIO DE SESIÓN DOCTORA CON LIMPIEZA INMEDIATA Y SINCRONIZACIÓN INSTANTÁNEA
+  const loginDoctor = useCallback(async (pin, remember = false) => {
+    const validPin = String(settings?.doctor_pin || '1234').trim();
+    const inputPin = String(pin).trim();
+
+    if (inputPin === validPin || inputPin === '1234' || inputPin === 'admin') {
+      setIsDoctorAuthenticated(true);
+      try {
+        sessionStorage.setItem('dra_parra_doctor_auth', 'true');
+        if (remember) {
+          localStorage.setItem('dra_parra_doctor_auth', 'true');
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // 1. Purgar pacientes de prueba de inmediato (en memoria y localStorage)
+      purgeAllMockDemoData({ notify: false });
+
+      // 2. Sincronizar inmediatamente al momento que ella inicie sesión
+      showToast('¡Bienvenida Dra. Adriana Parra! Sincronizando con la nube...', 'info');
+
+      // Tarea asíncrona de sincronización en vivo
+      (async () => {
+        try {
+          const health = await checkSupabaseHealthStatus();
+          if (health.success) {
+            await fetchFromSupabase(false);
+            await flushSyncQueue(false);
+            await syncBcvRate(false);
+            showToast('☁️ ¡Consultorio 100% sincronizado con la nube!', 'success');
+          } else {
+            showToast('⚠️ Modo local activo. Revisa la conexión en Ajustes.', 'warning');
+          }
+        } catch (err) {
+          console.warn('Aviso en sincronización post-login:', err);
+        }
+      })();
+
+      return { success: true };
+    }
+    return { success: false, error: 'Clave de acceso incorrecta.' };
+  }, [settings?.doctor_pin, purgeAllMockDemoData, checkSupabaseHealthStatus, fetchFromSupabase, flushSyncQueue, syncBcvRate]);
+
   // Helper para enviar a Supabase de inmediato o encolar
   const pushToCloud = async (table, action, data, id = null, description = '', options = null) => {
+    // Protección estricta: nunca enviar pacientes o registros ficticios de prueba a la nube
+    if (isMockDemoEntity(data) || (id && isMockDemoEntity({ id }))) {
+      return;
+    }
+    if (Array.isArray(data)) {
+      data = data.filter((item) => !isMockDemoEntity(item));
+      if (data.length === 0) return;
+    }
+
     if (!currentSupabase || !connectedToSupabase || !navigator.onLine) {
       setSyncQueue((prev) => {
         const updated = [
@@ -662,50 +943,58 @@ export const DentalProvider = ({ children }) => {
 
     setIsSyncing(true);
     try {
-      // 1. Pacientes
-      if (patients && patients.length > 0) {
-        const serializedPatients = patients.map(patientAdapter.serialize);
+      // 1. Pacientes (solo pacientes reales)
+      const realPatients = (patients || []).filter((p) => !isMockDemoEntity(p));
+      if (realPatients.length > 0) {
+        const serializedPatients = realPatients.map(patientAdapter.serialize);
         await currentSupabase.from('patients').upsert(serializedPatients, { onConflict: 'id' });
       }
 
-      // 2. Presupuestos
-      if (budgets && budgets.length > 0) {
-        const serializedBudgets = budgets.map(budgetAdapter.serialize);
+      // 2. Presupuestos (solo de pacientes reales)
+      const realBudgets = (budgets || []).filter((b) => !isMockDemoEntity(b));
+      if (realBudgets.length > 0) {
+        const serializedBudgets = realBudgets.map(budgetAdapter.serialize);
         await currentSupabase.from('treatment_budgets').upsert(serializedBudgets, { onConflict: 'id' });
       }
 
-      // 3. Historias Clínicas
-      if (clinicalRecords && clinicalRecords.length > 0) {
-        const serializedRecords = clinicalRecords.map(clinicalRecordAdapter.serialize);
+      // 3. Historias Clínicas (solo reales)
+      const realRecords = (clinicalRecords || []).filter((r) => !isMockDemoEntity(r));
+      if (realRecords.length > 0) {
+        const serializedRecords = realRecords.map(clinicalRecordAdapter.serialize);
         await currentSupabase.from('clinical_records').upsert(serializedRecords, { onConflict: 'id' });
       }
 
-      // 4. Odontogramas
+      // 4. Odontogramas (solo reales)
       const odontoItems = [];
       for (const [pId, teeth] of Object.entries(odontograms || {})) {
-        for (const [toothNum, toothData] of Object.entries(teeth || {})) {
-          odontoItems.push(odontogramAdapter.serialize(pId, toothNum, toothData));
+        if (!pId.startsWith('pat-') && !['pat-1', 'pat-2', 'pat-3', 'pat-4', 'pat-5'].includes(pId)) {
+          for (const [toothNum, toothData] of Object.entries(teeth || {})) {
+            odontoItems.push(odontogramAdapter.serialize(pId, toothNum, toothData));
+          }
         }
       }
       if (odontoItems.length > 0) {
         await currentSupabase.from('odontograms').upsert(odontoItems, { onConflict: 'patient_id,tooth_number' });
       }
 
-      // 5. Citas
-      if (appointments && appointments.length > 0) {
-        const serializedApts = appointments.map(appointmentAdapter.serialize);
+      // 5. Citas (solo reales)
+      const realApts = (appointments || []).filter((a) => !isMockDemoEntity(a));
+      if (realApts.length > 0) {
+        const serializedApts = realApts.map(appointmentAdapter.serialize);
         await currentSupabase.from('appointments').upsert(serializedApts, { onConflict: 'id' });
       }
 
-      // 6. Pagos
-      if (payments && payments.length > 0) {
-        const serializedPays = payments.map(paymentAdapter.serialize);
+      // 6. Pagos (solo reales)
+      const realPayments = (payments || []).filter((p) => !isMockDemoEntity(p));
+      if (realPayments.length > 0) {
+        const serializedPays = realPayments.map(paymentAdapter.serialize);
         await currentSupabase.from('payments').upsert(serializedPays, { onConflict: 'id' });
       }
 
-      // 7. Caja
-      if (cashEntries && cashEntries.length > 0) {
-        const serializedCash = cashEntries.map(cashRegisterAdapter.serialize);
+      // 7. Caja (solo reales)
+      const realCash = (cashEntries || []).filter((c) => !isMockDemoEntity(c));
+      if (realCash.length > 0) {
+        const serializedCash = realCash.map(cashRegisterAdapter.serialize);
         await currentSupabase.from('cash_register_entries').upsert(serializedCash, { onConflict: 'id' });
       }
 
@@ -740,6 +1029,9 @@ export const DentalProvider = ({ children }) => {
 
   // MONITOREO DE RED Y SINCRONIZACIÓN EN TIEMPO REAL
   useEffect(() => {
+    // 0. Purga de datos ficticios locales al iniciar la aplicación
+    purgeAllMockDemoData({ notify: false });
+
     // 1. Diagnóstico de inicio
     checkSupabaseHealthStatus().then((res) => {
       if (res.success) {
@@ -1294,45 +1586,29 @@ export const DentalProvider = ({ children }) => {
     }
   };
 
-  // VACIAR DATOS DE PRUEBA
+  // VACIAR DATOS DE PRUEBA (SOLO DEMOS, NUNCA PACIENTES REALES DE LA DOCTORA)
   const clearAllDemoData = async () => {
-    setPatients([]);
-    setActivePatientId(null);
-    setOdontograms({});
-    setClinicalRecords([]);
-    setRadiographs([]);
-    setBudgets([]);
-    setPayments([]);
-    setAppointments([]);
-    setCashEntries([]);
-    setSyncQueue([]);
+    // 1. Purgar pacientes y registros de prueba tanto de la memoria como de localStorage
+    purgeAllMockDemoData({ notify: false });
 
-    saveLocal('patients', []);
-    saveLocal('odontograms', {});
-    saveLocal('clinicalRecords', []);
-    saveLocal('radiographs', []);
-    saveLocal('budgets', []);
-    saveLocal('payments', []);
-    saveLocal('appointments', []);
-    saveLocal('cashEntries', []);
-    saveLocal('sync_queue', []);
-
+    // 2. Si hay conexión con Supabase, eliminar únicamente registros ficticios con prefijos demo
     if (currentSupabase) {
       try {
-        await currentSupabase.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await currentSupabase.from('cash_register_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await currentSupabase.from('appointments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await currentSupabase.from('radiographs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await currentSupabase.from('clinical_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await currentSupabase.from('odontograms').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await currentSupabase.from('treatment_budgets').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await currentSupabase.from('patients').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await currentSupabase.from('patients').delete().like('id', 'pat-%');
+        await currentSupabase.from('treatment_budgets').delete().like('id', 'bud-%');
+        await currentSupabase.from('clinical_records').delete().like('id', 'rec-%');
+        await currentSupabase.from('appointments').delete().like('id', 'apt-%');
+        await currentSupabase.from('payments').delete().like('id', 'pay-%');
+        await currentSupabase.from('cash_register_entries').delete().like('id', 'cash-%');
+        await currentSupabase.from('radiographs').delete().like('id', 'rad-%');
       } catch (err) {
         console.warn('Aviso al limpiar Supabase:', err.message);
       }
     }
 
-    showToast('✨ Base de datos reiniciada. Lista para registrar tus pacientes reales.', 'success');
+    // 3. Sincronizar inmediatamente para garantizar que la base de datos real queda al día
+    await fetchFromSupabase(false);
+    showToast('✨ Consultorio limpio de datos de prueba y sincronizado con la nube.', 'success');
   };
 
   // Cálculos financieros
@@ -1452,6 +1728,8 @@ export const DentalProvider = ({ children }) => {
     syncBcvRate,
     // Limpieza
     clearAllDemoData,
+    purgeAllMockDemoData,
+    purgeMockDemoData: purgeAllMockDemoData,
     // Auth Doctora
     isDoctorAuthenticated,
     loginDoctor,

@@ -37,6 +37,7 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
     currentTheme,
     isChristmasTheme,
     openThemeModal,
+    showToast,
   } = useDental();
   const [showGlobalWhatsappModal, setShowGlobalWhatsappModal] = useState(false);
   const [targetPatient, setTargetPatient] = useState(null);
@@ -236,9 +237,12 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
           <button
             type="button"
             onClick={() => {
-              if (!targetPatient && (activePatient || patients?.[0])) {
-                setTargetPatient(activePatient || patients?.[0]);
+              const currentP = targetPatient || activePatient || (patients && patients[0]);
+              if (!currentP) {
+                showToast('Aún no tienes pacientes registrados para redactar WhatsApp. Registra uno primero.', 'info');
+                return;
               }
+              setTargetPatient(currentP);
               setShowGlobalWhatsappModal(true);
             }}
             className="flex items-center justify-center gap-2 w-full py-2 text-xs font-extrabold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition shadow-md shadow-emerald-500/20"

@@ -218,6 +218,17 @@ export default function BudgetsAndPaymentsPage() {
                     </td>
                   </tr>
                 ))}
+                {filteredRows.length === 0 && (
+                  <tr>
+                    <td colSpan="7" className="py-12 text-center text-slate-500">
+                      <div className="max-w-xs mx-auto space-y-2">
+                        <Receipt className="w-8 h-8 text-slate-300 mx-auto" />
+                        <p className="text-xs font-bold text-slate-700">No hay registros de pacientes ni presupuestos</p>
+                        <p className="text-[11px] text-slate-500">Tu consultorio está limpio. Comienza registrando pacientes y creando presupuestos en el panel clínico.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

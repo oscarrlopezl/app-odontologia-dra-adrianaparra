@@ -10,7 +10,7 @@ export default function DoctorLoginScreen() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!pin.trim()) {
       setError('Por favor ingresa la clave de acceso');
@@ -20,13 +20,16 @@ export default function DoctorLoginScreen() {
     setIsLoading(true);
     setError('');
 
-    setTimeout(() => {
-      const res = loginDoctor(pin, remember);
-      setIsLoading(false);
-      if (!res.success) {
-        setError(res.error || 'Clave de acceso incorrecta');
+    try {
+      const res = await loginDoctor(pin, remember);
+      if (!res?.success) {
+        setError(res?.error || 'Clave de acceso incorrecta');
       }
-    }, 200);
+    } catch (err) {
+      setError(err?.message || 'Error al verificar clave');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
