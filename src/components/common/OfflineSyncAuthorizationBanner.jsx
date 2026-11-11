@@ -9,34 +9,35 @@ import {
   AlertTriangle,
   X,
   Database,
-  ShieldCheck,
-  ChevronRight
+  ExternalLink,
+  Zap,
 } from 'lucide-react';
 
 export default function OfflineSyncAuthorizationBanner() {
   const {
     isOnline,
+    connectedToSupabase,
+    supabaseHealth,
     syncQueue = [],
     pendingSyncCount = 0,
     authorizeAndUploadPendingChanges,
+    openDiagnosticModal,
     isSyncing,
-    lastSyncTime,
   } = useDental();
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [dismissedUntilNewItem, setDismissedUntilNewItem] = useState(false);
+  const [dismissCloudWarning, setDismissCloudWarning] = useState(false);
 
   const safeSyncQueue = Array.isArray(syncQueue) ? syncQueue : [];
   const count = Number(pendingSyncCount) || safeSyncQueue.length;
 
-  // Si estamos online y no hay nada pendiente en cola, no estorbar
-  if (isOnline && count === 0) {
+  // Si estamos online, conectados a Supabase y no hay cambios en cola, no mostrar banner
+  if (isOnline && connectedToSupabase && count === 0) {
     return null;
   }
 
   return (
     <>
-      {/* BANNER SUPERIOR INFORMATIVO Y DE AUTORIZACIÓN */}
       <div className="w-full z-30 transition-all duration-300">
         {!isOnline ? (
           // ESTADO 1: TOTALMENTE SIN INTERNET / SIN SEÑAL
@@ -50,21 +51,64 @@ export default function OfflineSyncAuthorizationBanner() {
                   Modo Sin Señal / Offline Seguro
                 </p>
                 <p className="text-[11px] text-amber-100/90 leading-tight">
-                  No hay internet. Puedes seguir registrando pacientes, citas, historias y abonos con total normalidad; todo se guarda en este teléfono.
-                  {pendingSyncCount > 0 && ` (${pendingSyncCount} cambios en espera de WiFi)`}
+                  No hay conexión a internet en este equipo. Todo lo que registres se guardará de forma segura en este dispositivo y se sincronizará cuando vuelvas a tener señal.
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               <span className="bg-amber-800/80 text-amber-100 font-bold px-2 py-1 rounded-md text-[10px] border border-amber-400/30">
-                💾 Memoria Local Activa
+                💾 Guardado Local Seguro
               </span>
             </div>
           </div>
+        ) : !connectedToSupabase ? (
+          // ESTADO 2: HAY INTERNET PERO SUPABASE ESTÁ PAUSADO / DESCONECTADO
+          !dismissCloudWarning && (
+            <div className="bg-gradient-to-r from-amber-700 via-orange-700 to-slate-900 text-white px-4 py-3 shadow-lg border-b border-amber-400/30 flex flex-wrap items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-amber-300 animate-pulse" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-extrabold text-white text-xs sm:text-sm">
+                      ⚠️ Base de Datos en la Nube Desconectada (Sincronización Pausada)
+                    </p>
+                    <span className="bg-amber-400 text-slate-950 font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase">
+                      Solo en este equipo
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-100/90 mt-0.5">
+                    Tu proyecto de Supabase está pausado por inactividad. Los datos que ingreses NO aparecerán en tus otros dispositivos hasta que lo reanudes en Supabase.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={openDiagnosticModal}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition transform active:scale-95"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Reanudar Supabase / Ver Diagnóstico</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDismissCloudWarning(true)}
+                  className="p-1.5 text-amber-200 hover:text-white rounded-lg transition"
+                  title="Ocultar aviso por ahora"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )
         ) : (
-          // ESTADO 2: HAY INTERNET Y HAY CAMBIOS PENDIENTES QUE REQUIEREN AUTORIZACIÓN
-          pendingSyncCount > 0 && (
+          // ESTADO 3: HAY INTERNET, SUPABASE CONECTADO Y HAY CAMBIOS EN COLA
+          count > 0 && (
             <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 text-white px-4 py-3 shadow-lg border-b border-emerald-500/30 flex flex-wrap items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-200">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
@@ -73,14 +117,11 @@ export default function OfflineSyncAuthorizationBanner() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-extrabold text-white text-xs sm:text-sm">
-                      ¡Señal Disponible! Tienes {pendingSyncCount} {pendingSyncCount === 1 ? 'cambio pendiente' : 'cambios pendientes'}
+                      ¡Señal Disponible! Tienes {count} {count === 1 ? 'cambio pendiente' : 'cambios pendientes'}
                     </p>
-                    <span className="bg-emerald-400 text-slate-950 font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase">
-                      Requiere Autorización
-                    </span>
                   </div>
                   <p className="text-[11px] text-emerald-200/90 mt-0.5">
-                    Se guardaron cambios localmente mientras estabas sin conexión. ¿Deseas subirlos ahora a la nube Supabase?
+                    Se guardaron cambios localmente mientras estabas sin conexión. Presiona el botón para sincronizarlos con la nube.
                   </p>
                 </div>
               </div>
@@ -101,7 +142,7 @@ export default function OfflineSyncAuthorizationBanner() {
                   className="flex items-center gap-2 px-4 py-2 bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold rounded-xl shadow-md shadow-emerald-500/20 transition transform active:scale-95"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                  <span>{isSyncing ? 'Subiendo datos...' : 'Autorizar y Subir Datos'}</span>
+                  <span>{isSyncing ? 'Subiendo...' : 'Sincronizar a la Nube'}</span>
                 </button>
               </div>
             </div>
@@ -109,7 +150,7 @@ export default function OfflineSyncAuthorizationBanner() {
         )}
       </div>
 
-      {/* MODAL PARA REVISAR LOS CAMBIOS PENDIENTES ANTES DE AUTORIZAR */}
+      {/* MODAL DETALLES DE CAMBIOS PENDIENTES */}
       {showDetailsModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 text-slate-800 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100">
@@ -120,7 +161,7 @@ export default function OfflineSyncAuthorizationBanner() {
                 </div>
                 <div>
                   <h4 className="font-extrabold text-sm text-slate-900">
-                    Cambios Pendientes por Subir ({pendingSyncCount})
+                    Cambios Pendientes por Subir ({count})
                   </h4>
                   <p className="text-[11px] text-slate-500">
                     Guardados localmente en este dispositivo
@@ -136,11 +177,10 @@ export default function OfflineSyncAuthorizationBanner() {
               </button>
             </div>
 
-            {/* Lista de cambios en cola */}
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {safeSyncQueue.map((item, idx) => (
                 <div
-                  key={item.id || idx}
+                  key={item.queueId || item.id || idx}
                   className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
@@ -148,7 +188,7 @@ export default function OfflineSyncAuthorizationBanner() {
                       {item.description || `${item.action.toUpperCase()} en ${item.table}`}
                     </span>
                     <span className="text-[10px] text-slate-500 font-mono">
-                      Tabla: {item.table} • {item.timestamp ? new Date(item.timestamp).toLocaleTimeString('es-VE') : 'Reciente'}
+                      Tabla: {item.table}
                     </span>
                   </div>
                   <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
@@ -177,7 +217,7 @@ export default function OfflineSyncAuthorizationBanner() {
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-extrabold rounded-xl shadow-md transition"
               >
                 <CloudUpload className="w-4 h-4" />
-                <span>{isSyncing ? 'Subiendo...' : 'Sí, Autorizar y Subir Ahora'}</span>
+                <span>{isSyncing ? 'Subiendo...' : 'Sincronizar Ahora'}</span>
               </button>
             </div>
           </div>

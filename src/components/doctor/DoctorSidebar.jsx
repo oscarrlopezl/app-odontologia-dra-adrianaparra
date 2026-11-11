@@ -32,6 +32,7 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
     isUpdatingBcv,
     syncBcvRate,
     refreshCloudData,
+    openDiagnosticModal,
     isSyncing,
   } = useDental();
   const [showGlobalWhatsappModal, setShowGlobalWhatsappModal] = useState(false);
@@ -74,29 +75,42 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
         {/* Estado de Supabase y Sincronización Automática */}
         <div className="mx-4 mt-4 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between text-xs">
           <button
-            onClick={refreshCloudData}
+            onClick={connectedToSupabase ? refreshCloudData : openDiagnosticModal}
             disabled={isSyncing}
             className="flex items-center gap-2 hover:opacity-80 transition text-left"
-            title="Haz clic para sincronizar datos con la nube Supabase ahora"
+            title={connectedToSupabase ? "Haz clic para sincronizar datos con la nube Supabase ahora" : "La nube está desconectada. Clic para ver diagnóstico"}
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                isOnline
+                  ? (connectedToSupabase ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400 animate-ping')
+                  : 'bg-slate-500'
               }`}
             ></span>
             <span className="text-slate-300 font-medium text-[11px]">
-              {isOnline ? (connectedToSupabase ? 'Nube Sincronizada' : 'En Línea') : 'Modo Offline Seguro'}
+              {isOnline
+                ? (connectedToSupabase ? 'Nube Sincronizada' : 'Nube Pausada')
+                : 'Modo Offline Seguro'}
             </span>
             {isSyncing && <RefreshCw className="w-3 h-3 text-emerald-400 animate-spin" />}
           </button>
-          {pendingSyncCount > 0 ? (
-            <span className="text-[10px] text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded font-bold border border-amber-500/30">
-              {pendingSyncCount} pend.
-            </span>
+          {connectedToSupabase ? (
+            pendingSyncCount > 0 ? (
+              <span className="text-[10px] text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded font-bold border border-amber-500/30">
+                {pendingSyncCount} pend.
+              </span>
+            ) : (
+              <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded font-mono font-bold">
+                100% al día
+              </span>
+            )
           ) : (
-            <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded font-mono font-bold">
-              100% al día
-            </span>
+            <button
+              onClick={openDiagnosticModal}
+              className="text-[10px] text-amber-300 bg-amber-950/90 hover:bg-amber-900 px-2 py-0.5 rounded font-extrabold border border-amber-500/40 transition"
+            >
+              Reanudar
+            </button>
           )}
         </div>
 

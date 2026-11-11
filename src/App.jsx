@@ -12,6 +12,7 @@ import CashRegisterPage from './pages/doctor/CashRegisterPage';
 import ClinicSettingsPage from './pages/doctor/ClinicSettingsPage';
 import DoctorLoginScreen from './components/doctor/DoctorLoginScreen';
 import PwaInstallPrompt from './components/common/PwaInstallPrompt';
+import SupabaseSyncDiagnosticModal from './components/doctor/SupabaseSyncDiagnosticModal';
 import { CheckCircle2, AlertTriangle, Info, Menu, Lock } from 'lucide-react';
 
 function ToastContainer() {
@@ -55,6 +56,10 @@ function DoctorLayout({ children }) {
     patients,
     activePatient,
     bcvInfo,
+    connectedToSupabase,
+    openDiagnosticModal,
+    showDiagnosticModal,
+    closeDiagnosticModal,
   } = useDental();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -97,8 +102,19 @@ function DoctorLayout({ children }) {
           </div>
         </div>
 
-        {/* Indicadores en Barra Móvil: Tasa BCV y Bloqueo */}
+        {/* Indicadores en Barra Móvil: Tasa BCV, Estado Supabase y Bloqueo */}
         <div className="flex items-center gap-1.5">
+          {!connectedToSupabase && (
+            <button
+              onClick={openDiagnosticModal}
+              className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 animate-pulse"
+              title="La nube Supabase está pausada. Toca para ver diagnóstico"
+            >
+              <span>⚠️</span>
+              <span className="hidden xs:inline">Nube Pausada</span>
+            </button>
+          )}
+
           <div className="bg-teal-950/80 border border-teal-500/40 text-teal-300 px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1">
             <span>🇻🇪</span>
             <span>Bs.{Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30).toFixed(2)}</span>
@@ -143,6 +159,12 @@ function DoctorLayout({ children }) {
           initialTab="cita"
         />
       )}
+
+      {/* Modal de Diagnóstico de Supabase y Sincronización */}
+      <SupabaseSyncDiagnosticModal
+        isOpen={showDiagnosticModal}
+        onClose={closeDiagnosticModal}
+      />
     </div>
   );
 }

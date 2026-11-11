@@ -10,7 +10,8 @@ import {
   HardDrive, 
   Download,
   ShieldCheck,
-  Database
+  Database,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function DoctorHeader({ title, subtitle, actionButton }) {
@@ -18,6 +19,7 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
     settings, 
     isSyncing, 
     isOnline, 
+    connectedToSupabase,
     pendingSyncCount, 
     syncPendingQueue, 
     lastSyncTime,
@@ -26,6 +28,7 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
     isUpdatingBcv,
     syncBcvRate,
     refreshCloudData,
+    openDiagnosticModal,
   } = useDental();
 
   const exchangeRate = Number(settings?.usd_exchange_rate || bcvInfo?.rate || 887.30);
@@ -49,29 +52,43 @@ export default function DoctorHeader({ title, subtitle, actionButton }) {
           {/* INDICADOR DOBLE GUARDADO (A PRUEBA DE APAGONES Y CAÍDAS DE WIFI) */}
           <div className="flex items-center gap-2">
             {isOnline ? (
-              pendingSyncCount > 0 ? (
-                <button
-                  onClick={syncPendingQueue}
-                  disabled={isSyncing}
-                  className="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs"
-                  title="Haz clic para subir los datos pendientes a la nube"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 text-amber-600 ${isSyncing ? 'animate-spin' : ''}`} />
-                  <span>{pendingSyncCount} pendientes</span>
-                  <span className="bg-amber-200 text-amber-900 text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">
-                    Subir a Nube
-                  </span>
-                </button>
+              connectedToSupabase ? (
+                pendingSyncCount > 0 ? (
+                  <button
+                    onClick={syncPendingQueue}
+                    disabled={isSyncing}
+                    className="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs"
+                    title="Haz clic para subir los datos pendientes a la nube"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-amber-600 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <span>{pendingSyncCount} pendientes</span>
+                    <span className="bg-amber-200 text-amber-900 text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">
+                      Subir a Nube
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={refreshCloudData}
+                    disabled={isSyncing}
+                    className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition active:scale-95"
+                    title={`Guardado doble activo (Memoria PC + Nube Supabase). Última sync: ${lastSyncTime || 'Al día'}. Haz clic para refrescar datos de la nube.`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <Database className={`w-3.5 h-3.5 text-emerald-600 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <span>Doble Guardado: PC + Nube</span>
+                  </button>
+                )
               ) : (
                 <button
-                  onClick={refreshCloudData}
-                  disabled={isSyncing}
-                  className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-2xs transition active:scale-95"
-                  title={`Guardado doble activo (Memoria PC + Nube Supabase). Última sync: ${lastSyncTime || 'Al día'}. Haz clic para refrescar datos de la nube.`}
+                  onClick={openDiagnosticModal}
+                  className="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 border-2 border-amber-400 text-amber-900 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs transition animate-pulse"
+                  title="La nube Supabase está pausada o desconectada. Haz clic para diagnosticar y reanudar."
                 >
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <Database className={`w-3.5 h-3.5 text-emerald-600 ${isSyncing ? 'animate-spin' : ''}`} />
-                  <span>Doble Guardado: PC + Nube</span>
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Nube Pausada (Solo Local)</span>
+                  <span className="bg-amber-200 text-amber-950 text-[10px] px-1.5 py-0.5 rounded-md font-extrabold">
+                    Reanudar
+                  </span>
                 </button>
               )
             ) : (

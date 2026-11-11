@@ -21,7 +21,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   X,
-  KeyRound
+  KeyRound,
+  Zap,
 } from 'lucide-react';
 
 export default function ClinicSettingsPage() {
@@ -35,7 +36,13 @@ export default function ClinicSettingsPage() {
     bcvInfo,
     isUpdatingBcv,
     syncBcvRate,
-    clearAllDemoData
+    clearAllDemoData,
+    openDiagnosticModal,
+    supabaseHealth,
+    syncAllLocalToCloud,
+    lastSyncTime,
+    pendingSyncCount,
+    activeSupabaseConfig,
   } = useDental();
 
   const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
@@ -128,31 +135,66 @@ export default function ClinicSettingsPage() {
       />
 
       <div className="flex-1 p-3.5 sm:p-6 md:p-8 space-y-5 sm:space-y-6 max-w-5xl w-full mx-auto">
-        {/* Banner de Supabase & Cuenta de la Doctora */}
-        <div className="bg-gradient-to-r from-slate-900 to-teal-950 rounded-3xl p-6 text-white border border-teal-800/40 shadow-xl">
+        {/* Centro de Control de Conexión en la Nube (Supabase) */}
+        <div className="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 rounded-3xl p-6 text-white border border-teal-800/40 shadow-xl space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Database className="w-5 h-5 text-teal-400" />
-                <h3 className="font-extrabold text-lg">Infraestructura y Datos en Supabase</h3>
+                <h3 className="font-extrabold text-lg">Base de Datos y Sincronización en la Nube</h3>
                 <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
                     connectedToSupabase
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
                   }`}
                 >
-                  {connectedToSupabase ? 'En línea con Supabase' : 'Modo Demostración / Local'}
+                  <span className={`w-1.5 h-1.5 rounded-full ${connectedToSupabase ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+                  {connectedToSupabase ? 'Nube Conectada y Sincronizando' : 'Nube Pausada / Modo Solo Local'}
                 </span>
               </div>
               <p className="text-xs text-slate-300 max-w-xl">
-                Todo el almacenamiento en la nube, imágenes y base de datos queda asignado al correo de la Dra. Adriana Parra (<strong>{formSettings.doctor_email}</strong>). El código fuente queda 100% tuyo en tu repositorio de GitHub.
+                Permite que la Dra. Adriana Parra tenga todas sus historias, presupuestos, pagos y citas actualizados al mismo tiempo en su teléfono, laptop y computadora de consultorio.
               </p>
+              {supabaseHealth?.message && (
+                <p className="text-[11px] font-mono text-teal-200/90 pt-1">
+                  Estado: {supabaseHealth.message}
+                </p>
+              )}
             </div>
 
-            <div className="bg-white/10 p-3 rounded-2xl border border-white/10 text-xs">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Correo Titular:</span>
-              <span className="font-mono text-teal-300 font-bold">{formSettings.doctor_email}</span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={openDiagnosticModal}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition active:scale-95"
+              >
+                <Zap className="w-4 h-4" />
+                <span>Diagnosticar y Configurar Nube</span>
+              </button>
+
+              <a
+                href="https://supabase.com/dashboard"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/10 transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Panel Supabase</span>
+              </a>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-300 font-mono">
+            <div>
+              <span className="text-slate-400">URL Activa:</span>{' '}
+              <span className="text-teal-300">{activeSupabaseConfig?.url || 'https://pqchasrzglktlpipgqfo.supabase.co'}</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span>Última sincronización: <strong className="text-white">{lastSyncTime || 'Al iniciar'}</strong></span>
+              {pendingSyncCount > 0 && (
+                <span className="text-amber-400 font-bold">({pendingSyncCount} cambios pendientes en cola)</span>
+              )}
             </div>
           </div>
         </div>
