@@ -16,7 +16,10 @@ import {
   Database,
   Wifi,
   WifiOff,
-  RefreshCw
+  RefreshCw,
+  Package,
+  TrendingUp,
+  Search,
 } from 'lucide-react';
 
 export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
@@ -38,15 +41,24 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
     isChristmasTheme,
     openThemeModal,
     showToast,
+    lowStockCount,
+    openGlobalSearchModal,
   } = useDental();
   const [showGlobalWhatsappModal, setShowGlobalWhatsappModal] = useState(false);
   const [targetPatient, setTargetPatient] = useState(null);
 
   const navItems = [
     { to: '/doctor', label: 'Pacientes y Fichas', icon: Users, exact: true },
+    { to: '/doctor/metricas', label: 'Métricas y Balance', icon: TrendingUp },
     { to: '/doctor/citas', label: 'Agenda y Citas', icon: Calendar },
     { to: '/doctor/presupuestos', label: 'Presupuestos y Pagos', icon: CreditCard },
     { to: '/doctor/caja', label: 'Cuadre de Caja Diario', icon: DollarSign },
+    {
+      to: '/doctor/inventario',
+      label: 'Insumos Odontológicos',
+      icon: Package,
+      badge: lowStockCount > 0 ? `${lowStockCount} bajo` : null,
+    },
     { to: '/doctor/ajustes', label: 'Ajustes del Consultorio', icon: Settings },
   ];
 
@@ -86,7 +98,23 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
         </div>
 
         {/* Acceso Rápido al Tema Conmemorativo por Fecha */}
-        <div className="mx-4 mt-3">
+        <div className="mx-4 mt-3 space-y-2">
+          {/* Botón Buscador Rápido Global (Ctrl + K) */}
+          <button
+            type="button"
+            onClick={openGlobalSearchModal}
+            className="w-full p-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white flex items-center justify-between text-xs transition group cursor-pointer"
+            title="Búsqueda rápida de pacientes (Ctrl + K)"
+          >
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-teal-400 group-hover:scale-110 transition" />
+              <span className="font-semibold text-[11px]">Buscar paciente...</span>
+            </div>
+            <kbd className="text-[10px] bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded font-mono text-slate-400">
+              Ctrl+K
+            </kbd>
+          </button>
+
           <button
             type="button"
             onClick={openThemeModal}
@@ -185,15 +213,22 @@ export default function DoctorSidebar({ isOpen = false, onClose = () => {} }) {
                 end={item.exact}
                 onClick={handleNavClick}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  `flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 font-bold'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'
                   }`
                 }
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 shrink-0">
+                    {item.badge}
+                  </span>
+                )}
               </NavLink>
             );
           })}

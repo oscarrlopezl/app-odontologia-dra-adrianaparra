@@ -24,6 +24,8 @@ import {
   initialAppointments,
   initialCashEntries,
   initialPromotions,
+  initialInventory,
+  initialPatientConsents,
 } from '../lib/mockData';
 import { fetchOfficialBcvRate, getCachedBcvRate, CONTINGENCY_BCV_RATE } from '../lib/bcvRateService';
 import { getActiveThemeConfig, saveThemePreferences, THEME_CONFIGS } from '../lib/themeService';
@@ -258,6 +260,9 @@ export const DentalProvider = ({ children }) => {
   const [appointments, setAppointments] = useState(() => loadCleanLocalList('appointments'));
   const [cashEntries, setCashEntries] = useState(() => loadCleanLocalList('cashEntries'));
   const [promotions, setPromotions] = useState(() => loadLocal('promotions', initialPromotions));
+  const [inventory, setInventory] = useState(() => loadLocal('inventory', initialInventory));
+  const [patientConsents, setPatientConsents] = useState(() => loadLocal('patientConsents', initialPatientConsents));
+  const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
 
   // Cola de sincronización pendiente
   const [syncQueue, setSyncQueue] = useState(() => loadCleanSyncQueue());
@@ -579,6 +584,8 @@ export const DentalProvider = ({ children }) => {
   useEffect(() => { saveLocal('appointments', appointments); }, [appointments]);
   useEffect(() => { saveLocal('cashEntries', cashEntries); }, [cashEntries]);
   useEffect(() => { saveLocal('promotions', promotions); }, [promotions]);
+  useEffect(() => { saveLocal('inventory', inventory); }, [inventory]);
+  useEffect(() => { saveLocal('patientConsents', patientConsents); }, [patientConsents]);
   useEffect(() => { saveLocal('sync_queue', syncQueue); }, [syncQueue]);
   useEffect(() => { if (lastSyncTime) saveLocal('last_sync_time', lastSyncTime); }, [lastSyncTime]);
 
@@ -1492,6 +1499,8 @@ export const DentalProvider = ({ children }) => {
       appointments,
       cashEntries,
       promotions,
+      inventory,
+      patientConsents,
     };
 
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -1609,6 +1618,60 @@ export const DentalProvider = ({ children }) => {
     // 3. Sincronizar inmediatamente para garantizar que la base de datos real queda al día
     await fetchFromSupabase(false);
     showToast('✨ Consultorio limpio de datos de prueba y sincronizado con la nube.', 'success');
+  };
+
+  // GESTIÓN DE INVENTARIO ODONTOLÓGICO
+  const updateInventoryQuantity = (itemId, change) => {
+    setInventory((prev) =>
+      prev.map((item) => {
+        if (item.id === itemId) {
+          const newQty = Math.max(0, (Number(item.quantity) || 0) + change);
+          return { ...item, quantity: newQty, updated_at: new Date().toISOString() };
+        }
+        return item;
+      })
+    );
+  };
+
+  const addInventoryItem = (itemData) => {
+    const newItem = {
+      ...itemData,
+      id: itemData.id || `inv-${Date.now()}`,
+      created_at: new Date().toISOString(),
+    };
+    setInventory((prev) => [newItem, ...prev]);
+    showToast(`Insumo "${newItem.name}" añadido al inventario.`, 'success');
+    return newItem;
+  };
+
+  const updateInventoryItem = (itemId, updatedFields) => {
+    setInventory((prev) =>
+      prev.map((item) => (item.id === itemId ? { ...item, ...updatedFields, updated_at: new Date().toISOString() } : item))
+    );
+    showToast('Insumo actualizado.', 'success');
+  };
+
+  const deleteInventoryItem = (itemId) => {
+    setInventory((prev) => prev.filter((item) => item.id !== itemId));
+    showToast('Insumo retirado del inventario.', 'warning');
+  };
+
+  // Calcular alertas de stock bajo
+  const lowStockItems = (inventory || []).filter(
+    (item) => (Number(item.quantity) || 0) <= (Number(item.min_quantity) || 1)
+  );
+  const lowStockCount = lowStockItems.length;
+
+  // CONSENTIMIENTOS INFORMADOS DIGITALES
+  const savePatientConsent = (consentData) => {
+    const newConsent = {
+      ...consentData,
+      id: consentData.id || `cst-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      created_at: consentData.created_at || new Date().toISOString(),
+    };
+    setPatientConsents((prev) => [newConsent, ...prev]);
+    showToast(`Consentimiento firmado de "${newConsent.procedure_type || 'Procedimiento'}" guardado.`, 'success');
+    return newConsent;
   };
 
   // Cálculos financieros
@@ -1730,6 +1793,22 @@ export const DentalProvider = ({ children }) => {
     clearAllDemoData,
     purgeAllMockDemoData,
     purgeMockDemoData: purgeAllMockDemoData,
+    // Inventario Odontológico
+    inventory,
+    lowStockItems,
+    lowStockCount,
+    updateInventoryQuantity,
+    addInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    // Consentimientos Informados Digitales
+    patientConsents,
+    savePatientConsent,
+    // Buscador Rápido Global
+    showGlobalSearchModal,
+    setShowGlobalSearchModal,
+    openGlobalSearchModal: () => setShowGlobalSearchModal(true),
+    closeGlobalSearchModal: () => setShowGlobalSearchModal(false),
     // Auth Doctora
     isDoctorAuthenticated,
     loginDoctor,

@@ -9,6 +9,9 @@ import PatientFormModal from './PatientFormModal';
 import PrescriptionModal from '../common/PrescriptionModal';
 import WhatsAppModal from './WhatsAppModal';
 import PatientMedicalHistoryEditor from './PatientMedicalHistoryEditor';
+import ConsentSignatureModal from './ConsentSignatureModal';
+import BeforeAfterSliderModal from './BeforeAfterSliderModal';
+import MedicalJustificationModal from './MedicalJustificationModal';
 import {
   User,
   Phone,
@@ -31,6 +34,8 @@ import {
   Pill,
   MessageSquare,
   Send,
+  ShieldCheck,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 export default function PatientDetailView({ patient }) {
@@ -55,6 +60,9 @@ export default function PatientDetailView({ patient }) {
   const [whatsappInitialTab, setWhatsappInitialTab] = useState('cita');
   const [selectedConsultationForWhatsapp, setSelectedConsultationForWhatsapp] = useState(null);
   const [selectedBudgetForWhatsapp, setSelectedBudgetForWhatsapp] = useState(null);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [showBeforeAfterModal, setShowBeforeAfterModal] = useState(false);
+  const [showJustificationModal, setShowJustificationModal] = useState(false);
 
   if (!patient) {
     return (
@@ -240,6 +248,36 @@ export default function PatientDetailView({ patient }) {
               >
                 <DollarSign className="w-4 h-4" />
                 <span>Abonar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowConsentModal(true)}
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition"
+                title="Firmar consentimiento informado legal en pantalla"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                <span className="hidden sm:inline">Consentimiento</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowJustificationModal(true)}
+                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold px-3 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition"
+                title="Generar justificativo o reposo médico laboral formal"
+              >
+                <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="hidden sm:inline">Reposo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowBeforeAfterModal(true)}
+                className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold px-3 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition"
+                title="Comparador estético Antes y Después"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">Antes/Después</span>
               </button>
 
               <button
@@ -627,6 +665,33 @@ export default function PatientDetailView({ patient }) {
           budget={selectedBudgetForWhatsapp}
           consultationRecord={selectedConsultationForWhatsapp}
           initialTab={whatsappInitialTab}
+        />
+      )}
+
+      {/* Modal Consentimiento Informado con Firma Digital */}
+      {showConsentModal && patient && (
+        <ConsentSignatureModal
+          isOpen={showConsentModal}
+          onClose={() => setShowConsentModal(false)}
+          patient={patient}
+        />
+      )}
+
+      {/* Modal Justificativo Odontológico & Reposo */}
+      {showJustificationModal && patient && (
+        <MedicalJustificationModal
+          isOpen={showJustificationModal}
+          onClose={() => setShowJustificationModal(false)}
+          patient={patient}
+        />
+      )}
+
+      {/* Modal Comparador Estético Antes y Después */}
+      {showBeforeAfterModal && patient && (
+        <BeforeAfterSliderModal
+          isOpen={showBeforeAfterModal}
+          onClose={() => setShowBeforeAfterModal(false)}
+          patient={patient}
         />
       )}
 

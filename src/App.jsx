@@ -10,13 +10,16 @@ import AppointmentsPage from './pages/doctor/AppointmentsPage';
 import BudgetsAndPaymentsPage from './pages/doctor/BudgetsAndPaymentsPage';
 import CashRegisterPage from './pages/doctor/CashRegisterPage';
 import ClinicSettingsPage from './pages/doctor/ClinicSettingsPage';
+import ClinicDashboardPage from './pages/doctor/ClinicDashboardPage';
+import InventoryPage from './pages/doctor/InventoryPage';
 import DoctorLoginScreen from './components/doctor/DoctorLoginScreen';
 import PwaInstallPrompt from './components/common/PwaInstallPrompt';
 import SupabaseSyncDiagnosticModal from './components/doctor/SupabaseSyncDiagnosticModal';
+import GlobalQuickSearchModal from './components/common/GlobalQuickSearchModal';
 import SnowEffect from './components/common/SnowEffect';
 import SeasonalThemeBanner from './components/common/SeasonalThemeBanner';
 import ThemeSelectorModal from './components/common/ThemeSelectorModal';
-import { CheckCircle2, AlertTriangle, Info, Menu, Lock, Palette } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, Menu, Lock, Palette, Search } from 'lucide-react';
 
 function ToastContainer() {
   const { toast } = useDental();
@@ -69,6 +72,9 @@ function DoctorLayout({ children }) {
     openThemeModal,
     showThemeModal,
     closeThemeModal,
+    showGlobalSearchModal,
+    closeGlobalSearchModal,
+    openGlobalSearchModal,
   } = useDental();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -120,8 +126,17 @@ function DoctorLayout({ children }) {
           </div>
         </div>
 
-        {/* Indicadores en Barra Móvil: Botón Tema, Tasa BCV, Estado Supabase y Bloqueo */}
+        {/* Indicadores en Barra Móvil: Búsqueda Rápida, Botón Tema, Tasa BCV, Estado Supabase y Bloqueo */}
         <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={openGlobalSearchModal}
+            className="p-1.5 text-teal-300 hover:text-white rounded-lg bg-slate-800/80 border border-slate-700/80 active:scale-95 transition"
+            title="Buscar paciente rápidamente"
+          >
+            <Search className="w-3.5 h-3.5" />
+          </button>
+
           <button
             type="button"
             onClick={openThemeModal}
@@ -215,6 +230,12 @@ function DoctorLayout({ children }) {
         isOpen={showDiagnosticModal}
         onClose={closeDiagnosticModal}
       />
+
+      {/* Modal de Búsqueda Global Rápida (Ctrl + K) */}
+      <GlobalQuickSearchModal
+        isOpen={showGlobalSearchModal}
+        onClose={closeGlobalSearchModal}
+      />
     </div>
   );
 }
@@ -259,6 +280,22 @@ export default function App() {
               }
             />
             <Route
+              path="/doctor/metricas"
+              element={
+                <DoctorLayout>
+                  <ClinicDashboardPage />
+                </DoctorLayout>
+              }
+            />
+            <Route
+              path="/doctor/inventario"
+              element={
+                <DoctorLayout>
+                  <InventoryPage />
+                </DoctorLayout>
+              }
+            />
+            <Route
               path="/doctor/ajustes"
               element={
                 <DoctorLayout>
@@ -266,6 +303,7 @@ export default function App() {
                 </DoctorLayout>
               }
             />
+            <Route path="/doctor/dashboard" element={<Navigate to="/doctor/metricas" replace />} />
 
             {/* Redirección directa al Panel de la Doctora (App Exclusiva para la Doctora) */}
             <Route path="/portal" element={<Navigate to="/doctor" replace />} />
