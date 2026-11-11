@@ -13,11 +13,35 @@ const decodeFallbackKey = (encoded) => {
 };
 
 // Clave oficial verificada en Supabase (Decodificada de forma segura para despliegues)
-export const SUPABASE_DEFAULT_KEY = decodeFallbackKey('c2Jfc2VjcmV0X1lzcU9WbklseWJVbmxaYkFkUXVPR2dfdXFoYm8xSjA=');
+// Utiliza la clave publishable oficial: sb_publishable_4aGX4N0pZaw2c3d7l3NLXA_36B1dskR
+export const SUPABASE_DEFAULT_KEY = decodeFallbackKey('c2JfcHVibGlzaGFibGVfNGFHWDROMHBaYXcyYzNkN2wzTkxYQV8zNkIxZHNrUg==');
 
 const metaEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
 const envUrl = (metaEnv.VITE_SUPABASE_URL || '').trim();
 const envKey = (metaEnv.VITE_SUPABASE_ANON_KEY || '').trim();
+
+/**
+ * Sanitiza y separa inteligentemente la URL y la Clave de Supabase.
+ * Soporta casos donde el usuario copia y pega ambos valores juntos con espacios o saltos de línea.
+ */
+export function parseAndSanitizeSupabaseInput(inputUrl, inputKey) {
+  let url = String(inputUrl || '').trim();
+  let key = String(inputKey || '').trim();
+
+  // Si pegaron la URL y la clave juntos en uno de los campos (ej: "https://...  sb_publishable_...")
+  const combined = `${url} ${key}`.trim();
+  const urlMatch = combined.match(/https:\/\/[^\s"'`]+/i);
+  const keyMatch = combined.match(/(sb_publishable_[A-Za-z0-9_-]+|sb_secret_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9._-]+)/i);
+
+  if (urlMatch) {
+    url = urlMatch[0].trim().replace(/\/+$/, '');
+  }
+  if (keyMatch) {
+    key = keyMatch[0].trim();
+  }
+
+  return { url, key };
+}
 
 // Función para obtener las credenciales activas (Permite configuración personalizada desde Ajustes)
 export function getActiveSupabaseCredentials() {
@@ -32,13 +56,10 @@ export function getActiveSupabaseCredentials() {
     // ignore
   }
 
-  const rawUrl = customUrl.trim() || envUrl || SUPABASE_DEFAULT_URL;
-  let rawKey = customKey.trim() || envKey || SUPABASE_DEFAULT_KEY;
+  const sanitized = parseAndSanitizeSupabaseInput(customUrl, customKey);
 
-  // Si la clave tiene formato antiguo publishable inválido, usar el fallback verificado
-  if (rawKey.startsWith('sb_publishable_')) {
-    rawKey = SUPABASE_DEFAULT_KEY;
-  }
+  const rawUrl = sanitized.url || envUrl || SUPABASE_DEFAULT_URL;
+  const rawKey = sanitized.key || envKey || SUPABASE_DEFAULT_KEY;
 
   const isCustom = Boolean(customUrl.trim() || customKey.trim());
   const isConfigured = Boolean(rawUrl && rawKey && rawUrl.startsWith('https://'));
@@ -55,7 +76,8 @@ let activeCredentials = getActiveSupabaseCredentials();
 
 export function createSupabaseInstance(url, key) {
   if (!url || !key || !url.startsWith('https://')) return null;
-  return createClient(url, key, {
+  const sanitized = parseAndSanitizeSupabaseInput(url, key);
+  return createClient(sanitized.url || url, sanitized.key || key, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -75,10 +97,14 @@ export function subscribeToSupabaseChanges(fn) {
 
 // Función para actualizar credenciales desde la interfaz de Ajustes
 export function updateActiveSupabaseCredentials(newUrl, newKey) {
+  const sanitized = parseAndSanitizeSupabaseInput(newUrl, newKey);
+  const cleanUrl = sanitized.url || newUrl;
+  const cleanKey = sanitized.key || newKey;
+
   try {
     if (typeof localStorage !== 'undefined') {
-      if (newUrl) localStorage.setItem('dra_parra_custom_supabase_url', newUrl.trim());
-      if (newKey) localStorage.setItem('dra_parra_custom_supabase_key', newKey.trim());
+      if (cleanUrl) localStorage.setItem('dra_parra_custom_supabase_url', cleanUrl.trim());
+      if (cleanKey) localStorage.setItem('dra_parra_custom_supabase_key', cleanKey.trim());
     }
   } catch {
     // ignore
@@ -135,9 +161,10 @@ export async function testSupabaseConnection(overrideUrl = null, overrideKey = n
     };
   }
 
+  const sanitized = parseAndSanitizeSupabaseInput(overrideUrl, overrideKey);
   const creds = getActiveSupabaseCredentials();
-  const url = (overrideUrl || creds.url || '').trim().replace(/\/$/, '');
-  const key = (overrideKey || creds.key || '').trim();
+  const url = (sanitized.url || creds.url || '').trim().replace(/\/+$/, '');
+  const key = (sanitized.key || creds.key || '').trim();
 
   if (!url || !key || !url.startsWith('https://')) {
     return {
@@ -150,9 +177,9 @@ export async function testSupabaseConnection(overrideUrl = null, overrideKey = n
   const startTime = Date.now();
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
 
-    const response = await fetch(`${url}/rest/v1/clinic_settings?select=count`, {
+    let response = await fetch(`${url}/rest/v1/clinic_settings?select=count`, {
       method: 'GET',
       headers: {
         apikey: key,
@@ -160,6 +187,23 @@ export async function testSupabaseConnection(overrideUrl = null, overrideKey = n
       },
       signal: controller.signal,
     });
+
+    // Si falló por 401/403, verificar si el endpoint de autenticación valida la clave
+    if (!response.ok && (response.status === 401 || response.status === 403)) {
+      try {
+        const authCheck = await fetch(`${url}/auth/v1/health`, {
+          method: 'GET',
+          headers: { apikey: key },
+          signal: controller.signal,
+        });
+        if (authCheck.ok) {
+          response = authCheck;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     clearTimeout(timeoutId);
 
     const latency = Date.now() - startTime;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDental } from '../../context/DentalContext';
+import { parseAndSanitizeSupabaseInput } from '../../lib/supabaseClient';
 import {
   Database,
   RefreshCw,
@@ -82,20 +83,43 @@ export default function SupabaseSyncDiagnosticModal({ isOpen, onClose }) {
   };
 
   const handleSaveCredentials = () => {
-    if (!customUrl.trim() || !customKey.trim()) {
+    const parsed = parseAndSanitizeSupabaseInput(customUrl, customKey);
+    const targetUrl = parsed.url || customUrl.trim();
+    const targetKey = parsed.key || customKey.trim();
+
+    if (!targetUrl || !targetKey) {
       showToast('Por favor introduce la URL y la Clave de Supabase', 'error');
       return;
     }
-    saveCustomSupabaseConfig(customUrl.trim(), customKey.trim());
+    setCustomUrl(targetUrl);
+    setCustomKey(targetKey);
+    saveCustomSupabaseConfig(targetUrl, targetKey);
     showToast('Credenciales de Supabase actualizadas.', 'success');
     handleRunTest();
   };
 
+  const handleApplyOfficialPublishableKey = () => {
+    const officialUrl = 'https://pqchasrzglktlpipgqfo.supabase.co';
+    const officialKey = 'sb_publishable_4aGX4N0pZaw2c3d7l3NLXA_36B1dskR';
+    setCustomUrl(officialUrl);
+    setCustomKey(officialKey);
+    saveCustomSupabaseConfig(officialUrl, officialKey);
+    showToast('¡Clave oficial sb_publishable vinculada con éxito!', 'success');
+    setIsTesting(true);
+    checkSupabaseConnectionHealth(officialUrl, officialKey).then((res) => {
+      setTestResult(res);
+      setIsTesting(false);
+      if (res.success) {
+        showToast('¡Conexión verificada exitosamente!', 'success');
+      }
+    });
+  };
+
   const handleResetDefaults = () => {
     resetCustomSupabaseConfig();
-    setCustomUrl(activeSupabaseConfig?.defaultUrl || '');
-    setCustomKey(activeSupabaseConfig?.defaultKey || '');
-    showToast('Valores por defecto restablecidos.', 'info');
+    setCustomUrl(activeSupabaseConfig?.defaultUrl || 'https://pqchasrzglktlpipgqfo.supabase.co');
+    setCustomKey(activeSupabaseConfig?.defaultKey || 'sb_publishable_4aGX4N0pZaw2c3d7l3NLXA_36B1dskR');
+    showToast('Valores oficiales restablecidos.', 'info');
     handleRunTest();
   };
 
@@ -451,9 +475,16 @@ export default function SupabaseSyncDiagnosticModal({ isOpen, onClose }) {
                     URL de Supabase (Project URL):
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={customUrl}
-                    onChange={(e) => setCustomUrl(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const parsed = parseAndSanitizeSupabaseInput(val, customKey);
+                      setCustomUrl(parsed.url || val);
+                      if (parsed.key && parsed.key !== customKey) {
+                        setCustomKey(parsed.key);
+                      }
+                    }}
                     placeholder="https://tu-proyecto.supabase.co"
                     className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs focus:ring-2 focus:ring-teal-500 outline-hidden"
                   />
@@ -461,18 +492,33 @@ export default function SupabaseSyncDiagnosticModal({ isOpen, onClose }) {
 
                 <div>
                   <label className="block font-bold text-slate-700 mb-1 text-[11px]">
-                    Clave API (Anon Key o Service Role):
+                    Clave API (Publishable Anon Key o Secret):
                   </label>
                   <input
-                    type="password"
+                    type="text"
                     value={customKey}
-                    onChange={(e) => setCustomKey(e.target.value)}
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const parsed = parseAndSanitizeSupabaseInput(customUrl, val);
+                      setCustomKey(parsed.key || val);
+                      if (parsed.url && parsed.url !== customUrl) {
+                        setCustomUrl(parsed.url);
+                      }
+                    }}
+                    placeholder="sb_publishable_... o eyJhbGciOi..."
                     className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs focus:ring-2 focus:ring-teal-500 outline-hidden"
                   />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleApplyOfficialPublishableKey}
+                    className="px-3.5 py-1.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 rounded-xl text-xs font-black shadow-md transition active:scale-95 flex items-center gap-1.5"
+                  >
+                    <span>✨</span>
+                    <span>Conectar con sb_publishable oficial</span>
+                  </button>
                   <button
                     onClick={handleSaveCredentials}
                     className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition"

@@ -12,7 +12,7 @@ const decodeFallbackKey = (b64) => {
 };
 
 const SUPABASE_DEFAULT_URL = 'https://pqchasrzglktlpipgqfo.supabase.co';
-const SUPABASE_DEFAULT_KEY = decodeFallbackKey('c2Jfc2VjcmV0X1lzcU9WbklseWJVbmxaYkFkUXVPR2dfdXFoYm8xSjA=');
+const SUPABASE_DEFAULT_KEY = decodeFallbackKey('c2JfcHVibGlzaGFibGVfNGFHWDROMHBaYXcyYzNkN2wzTkxYQV8zNkIxZHNrUg==');
 
 export default async function handler(req, res) {
   // Configurar cabeceras CORS

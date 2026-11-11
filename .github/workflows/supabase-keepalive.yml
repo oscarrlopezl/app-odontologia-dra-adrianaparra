@@ -18,7 +18,7 @@ jobs:
       - name: Pulso de Actividad a Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://pqchasrzglktlpipgqfo.supabase.co' }}
-          ENCODED_KEY: "c2Jfc2VjcmV0X1lzcU9WbklseWJVbmxaYkFkUXVPR2dfdXFoYm8xSjA="
+          ENCODED_KEY: "c2JfcHVibGlzaGFibGVfNGFHWDROMHBaYXcyYzNkN2wzTkxYQV8zNkIxZHNrUg=="
         run: |
           echo "💓 [Supabase Keep-Alive] Iniciando pulso de actividad preventivo..."
           echo "🌐 URL Destino: $SUPABASE_URL"

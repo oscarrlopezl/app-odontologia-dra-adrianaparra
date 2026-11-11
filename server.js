@@ -27,7 +27,7 @@ app.get(['/api/health', '/ping'], (req, res) => {
 // Endpoint Keep-Alive para Supabase
 const decodeFallbackKey = (b64) => Buffer.from(b64, 'base64').toString('utf8');
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://pqchasrzglktlpipgqfo.supabase.co';
-const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || decodeFallbackKey('c2Jfc2VjcmV0X1lzcU9WbklseWJVbmxaYkFkUXVPR2dfdXFoYm8xSjA=');
+const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || decodeFallbackKey('c2JfcHVibGlzaGFibGVfNGFHWDROMHBaYXcyYzNkN2wzTkxYQV8zNkIxZHNrUg==');
 
 app.get('/api/keep-alive', async (req, res) => {
   try {
