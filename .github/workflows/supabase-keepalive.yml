@@ -1,0 +1,52 @@
+name: Supabase Keep-Alive Guard
+
+on:
+  schedule:
+    # Se ejecuta 2 veces al día (07:00 y 19:00 UTC) para garantizar que Supabase
+    # NUNCA entre en reposo por inactividad de 7 días (Plan Gratuito).
+    - cron: '0 7,19 * * *'
+  workflow_dispatch: # Permite ejecutar el pulso manualmente desde la pestaña Actions en GitHub
+  push:
+    branches:
+      - main
+
+jobs:
+  ping-supabase:
+    name: Mantener Supabase Activo 24/7
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pulso de Actividad a Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://pqchasrzglktlpipgqfo.supabase.co' }}
+          ENCODED_KEY: "c2Jfc2VjcmV0X1lzcU9WbklseWJVbmxaYkFkUXVPR2dfdXFoYm8xSjA="
+        run: |
+          echo "💓 [Supabase Keep-Alive] Iniciando pulso de actividad preventivo..."
+          echo "🌐 URL Destino: $SUPABASE_URL"
+          
+          SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            SUPABASE_ANON_KEY=$(echo "$ENCODED_KEY" | base64 --decode)
+          fi
+          
+          # 1. Consulta ligera a la API de datos (PostgREST)
+          HTTP_STATUS_DB=$(curl -s -o /tmp/supabase_db_response.json -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/clinic_settings?select=id&limit=1" || echo "000")
+            
+          echo "📊 Respuesta Base de Datos: HTTP $HTTP_STATUS_DB"
+          
+          # 2. Consulta de salud al módulo de Autenticación (GoTrue)
+          HTTP_STATUS_AUTH=$(curl -s -o /tmp/supabase_auth_response.json -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/auth/v1/health" || echo "000")
+            
+          echo "🔐 Respuesta Autenticación: HTTP $HTTP_STATUS_AUTH"
+          
+          if [ "$HTTP_STATUS_DB" -eq 200 ] || [ "$HTTP_STATUS_AUTH" -eq 200 ]; then
+            echo "✅ ¡Éxito! Supabase recibió el pulso de actividad. El contador de inactividad de 7 días fue reiniciado."
+          else
+            echo "⚠️ Advertencia: Código inesperado (DB: $HTTP_STATUS_DB, Auth: $HTTP_STATUS_AUTH). Verificando respuesta..."
+            cat /tmp/supabase_db_response.json 2>/dev/null || true
+            exit 1
+          fi

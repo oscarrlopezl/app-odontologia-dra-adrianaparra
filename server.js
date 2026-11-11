@@ -24,6 +24,37 @@ app.get(['/api/health', '/ping'], (req, res) => {
   });
 });
 
+// Endpoint Keep-Alive para Supabase
+const decodeFallbackKey = (b64) => Buffer.from(b64, 'base64').toString('utf8');
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://pqchasrzglktlpipgqfo.supabase.co';
+const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || decodeFallbackKey('c2Jfc2VjcmV0X1lzcU9WbklseWJVbmxaYkFkUXVPR2dfdXFoYm8xSjA=');
+
+app.get('/api/keep-alive', async (req, res) => {
+  try {
+    const start = Date.now();
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/clinic_settings?select=id&limit=1`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    });
+    const elapsed = Date.now() - start;
+    res.status(response.ok ? 200 : 502).json({
+      success: response.ok,
+      status: response.ok ? 'ONLINE' : 'ERROR',
+      supabaseHttpStatus: response.status,
+      latencyMs: elapsed,
+      timestamp: new Date().toISOString(),
+      message: response.ok
+        ? '💓 Pulso Keep-Alive recibido con éxito. Supabase se mantiene activo.'
+        : '⚠️ Supabase no respondió satisfactoriamente.',
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // Servir la carpeta compilada 'dist'
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));

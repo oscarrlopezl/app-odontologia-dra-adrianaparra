@@ -16,7 +16,10 @@ import {
   Check,
   Zap,
   Wifi,
-  WifiOff
+  WifiOff,
+  Activity,
+  Clock,
+  Heart
 } from 'lucide-react';
 
 export default function SupabaseSyncDiagnosticModal({ isOpen, onClose }) {
@@ -39,6 +42,9 @@ export default function SupabaseSyncDiagnosticModal({ isOpen, onClose }) {
     saveCustomSupabaseConfig,
     resetCustomSupabaseConfig,
     activeSupabaseConfig,
+    lastKeepAlive,
+    isSendingPulse,
+    triggerKeepAlivePulse,
   } = useDental();
 
   const [isTesting, setIsTesting] = useState(false);
@@ -229,6 +235,76 @@ export default function SupabaseSyncDiagnosticModal({ isOpen, onClose }) {
                 {testResult.message}
               </div>
             )}
+          </div>
+
+          {/* Guardián Anti-Pausa 24/7 (Keep-Alive Automático) */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-teal-950 via-slate-900 to-indigo-950 text-white border border-teal-500/30 shadow-lg space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                  <Heart className="w-4 h-4 text-rose-400 fill-rose-400/40 animate-pulse" />
+                </span>
+                <div>
+                  <h5 className="font-extrabold text-xs sm:text-sm text-white flex items-center gap-1.5">
+                    Guardián Anti-Pausa 24/7 (Keep-Alive Automático)
+                  </h5>
+                  <p className="text-[11px] text-teal-200/80">
+                    Mantiene Supabase siempre activo y evita la pausa por inactividad de 7 días.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={triggerKeepAlivePulse}
+                disabled={isSendingPulse}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 rounded-xl text-xs font-black shadow-md shadow-teal-500/20 transition active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
+              >
+                <Activity className={`w-3.5 h-3.5 ${isSendingPulse ? 'animate-spin' : ''}`} />
+                <span>{isSendingPulse ? 'Enviando Pulso...' : 'Enviar Pulso Preventivo'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-xs">
+              <div className="bg-white/10 p-3 rounded-xl border border-white/10">
+                <div className="flex items-center gap-1.5 text-teal-300 text-[11px] font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+                  <span>GitHub Actions Cron</span>
+                </div>
+                <p className="text-[10px] text-slate-300 mt-0.5 leading-snug">
+                  Automático 2 veces al día (07:00 y 19:00 UTC) sin requerir que nadie abra la app.
+                </p>
+              </div>
+
+              <div className="bg-white/10 p-3 rounded-xl border border-white/10">
+                <div className="flex items-center gap-1.5 text-teal-300 text-[11px] font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Vercel Keep-Alive</span>
+                </div>
+                <p className="text-[10px] text-slate-300 mt-0.5 leading-snug">
+                  Ruta <code className="text-teal-200 font-mono">/api/keep-alive</code> activa y programada a diario.
+                </p>
+              </div>
+
+              <div className="bg-white/10 p-3 rounded-xl border border-white/10">
+                <div className="flex items-center gap-1.5 text-teal-300 text-[11px] font-bold">
+                  <Clock className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Último Pulso Registrado</span>
+                </div>
+                <p className="text-[11px] font-bold text-amber-300 mt-0.5">
+                  {lastKeepAlive
+                    ? new Date(lastKeepAlive).toLocaleString('es-VE', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true,
+                      })
+                    : 'Registrándose al abrir la app'}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* 2. Alerta y Solución Si el Proyecto está Pausado */}

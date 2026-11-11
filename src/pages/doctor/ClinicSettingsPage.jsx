@@ -23,6 +23,7 @@ import {
   X,
   KeyRound,
   Zap,
+  Heart,
 } from 'lucide-react';
 
 export default function ClinicSettingsPage() {
@@ -43,6 +44,9 @@ export default function ClinicSettingsPage() {
     lastSyncTime,
     pendingSyncCount,
     activeSupabaseConfig,
+    lastKeepAlive,
+    isSendingPulse,
+    triggerKeepAlivePulse,
   } = useDental();
 
   const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
@@ -166,6 +170,17 @@ export default function ClinicSettingsPage() {
             <div className="flex flex-wrap items-center gap-2.5">
               <button
                 type="button"
+                onClick={triggerKeepAlivePulse}
+                disabled={isSendingPulse}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl text-xs font-bold border border-rose-500/40 transition active:scale-95 disabled:opacity-50"
+                title="Envía un pulso preventivo para reiniciar el contador de inactividad de Supabase"
+              >
+                <Heart className={`w-3.5 h-3.5 text-rose-400 fill-rose-400/40 ${isSendingPulse ? 'animate-spin' : ''}`} />
+                <span>{isSendingPulse ? 'Enviando Pulso...' : '💓 Pulso Preventivo'}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={openDiagnosticModal}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition active:scale-95"
               >
@@ -186,14 +201,22 @@ export default function ClinicSettingsPage() {
           </div>
 
           <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-300 font-mono">
-            <div>
-              <span className="text-slate-400">URL Activa:</span>{' '}
-              <span className="text-teal-300">{activeSupabaseConfig?.url || 'https://pqchasrzglktlpipgqfo.supabase.co'}</span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div>
+                <span className="text-slate-400">URL:</span>{' '}
+                <span className="text-teal-300">{activeSupabaseConfig?.url || 'https://pqchasrzglktlpipgqfo.supabase.co'}</span>
+              </div>
+              <span className="text-slate-600 hidden sm:inline">|</span>
+              <div className="text-emerald-300 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>Guardián 24/7 Activo (GitHub + Vercel Cron)</span>
+              </div>
             </div>
             <div className="flex items-center gap-4">
+              <span>Último pulso: <strong className="text-amber-300">{lastKeepAlive ? new Date(lastKeepAlive).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Hoy'}</strong></span>
               <span>Última sincronización: <strong className="text-white">{lastSyncTime || 'Al iniciar'}</strong></span>
               {pendingSyncCount > 0 && (
-                <span className="text-amber-400 font-bold">({pendingSyncCount} cambios pendientes en cola)</span>
+                <span className="text-amber-400 font-bold">({pendingSyncCount} en cola)</span>
               )}
             </div>
           </div>

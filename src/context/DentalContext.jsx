@@ -6,6 +6,8 @@ import {
   updateActiveSupabaseCredentials,
   resetDefaultSupabaseCredentials,
   testSupabaseConnection,
+  sendKeepAlivePing,
+  getLastKeepAliveInfo,
   subscribeToSupabaseChanges,
   SUPABASE_DEFAULT_URL,
   SUPABASE_DEFAULT_KEY,
@@ -152,6 +154,26 @@ export const DentalProvider = ({ children }) => {
   });
   const [isUpdatingBcv, setIsUpdatingBcv] = useState(false);
 
+  // Estado Keep-Alive (Guardián anti-pausa de Supabase)
+  const [lastKeepAlive, setLastKeepAlive] = useState(() => getLastKeepAliveInfo());
+  const [isSendingPulse, setIsSendingPulse] = useState(false);
+
+  const triggerKeepAlivePulse = useCallback(async () => {
+    setIsSendingPulse(true);
+    try {
+      const res = await sendKeepAlivePing();
+      if (res.success && res.timestamp) {
+        setLastKeepAlive(res.timestamp);
+        showToast('💓 Pulso preventivo enviado. Supabase renovó su actividad.', 'success');
+      } else {
+        showToast(res.message || 'No se pudo enviar el pulso a Supabase.', 'warning');
+      }
+      return res;
+    } finally {
+      setIsSendingPulse(false);
+    }
+  }, []);
+
   const showToast = (message, type = 'success') => {
     setToast({ id: Date.now(), message, type });
     setTimeout(() => {
@@ -225,6 +247,13 @@ export const DentalProvider = ({ children }) => {
 
       if (res.success) {
         setConnectedToSupabase(true);
+        const nowIso = new Date().toISOString();
+        setLastKeepAlive(nowIso);
+        try {
+          localStorage.setItem('dra_parra_last_keepalive', nowIso);
+        } catch {
+          // ignore
+        }
       } else {
         setConnectedToSupabase(false);
       }
@@ -1375,6 +1404,10 @@ export const DentalProvider = ({ children }) => {
       defaultUrl: SUPABASE_DEFAULT_URL,
       defaultKey: SUPABASE_DEFAULT_KEY,
     },
+    // Guardián Anti-Pausa Keep-Alive
+    lastKeepAlive,
+    isSendingPulse,
+    triggerKeepAlivePulse,
     // Tasa BCV
     bcvInfo,
     isUpdatingBcv,

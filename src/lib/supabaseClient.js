@@ -245,3 +245,70 @@ export const doctorInfo = {
   phone: metaEnv.VITE_CLINIC_PHONE || '+58 412-1234567',
   defaultExchangeRate: 887.30,
 };
+
+/**
+ * Envía un pulso Keep-Alive a Supabase para renovar el contador de inactividad de 7 días.
+ */
+export async function sendKeepAlivePing() {
+  const creds = getActiveSupabaseCredentials();
+  const url = creds.url.trim().replace(/\/$/, '');
+  const key = creds.key.trim();
+
+  if (!url || !key) {
+    return { success: false, message: 'Supabase no está configurado.' };
+  }
+
+  const start = Date.now();
+  try {
+    const res = await fetch(`${url}/rest/v1/clinic_settings?select=id&limit=1`, {
+      method: 'GET',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+      },
+    });
+
+    const latency = Date.now() - start;
+    if (res.ok) {
+      const nowIso = new Date().toISOString();
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('dra_parra_last_keepalive', nowIso);
+        }
+      } catch {
+        // ignore
+      }
+
+      return {
+        success: true,
+        latency,
+        timestamp: nowIso,
+        message: `¡Pulso exitoso! Supabase activo (${latency}ms). Contador renovado.`,
+      };
+    }
+
+    return {
+      success: false,
+      latency,
+      status: res.status,
+      message: `Supabase respondió con código HTTP ${res.status}.`,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: `Error al enviar pulso: ${err.message}`,
+    };
+  }
+}
+
+export function getLastKeepAliveInfo() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem('dra_parra_last_keepalive') || null;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
