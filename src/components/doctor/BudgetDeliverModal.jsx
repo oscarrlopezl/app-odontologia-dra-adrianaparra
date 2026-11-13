@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   Calendar,
   DollarSign,
-  Share2
+  Share2,
+  Edit,
 } from 'lucide-react';
 import { buildWhatsAppLink, cleanVenezuelanPhone } from '../../lib/whatsappService';
 
@@ -21,6 +22,7 @@ export default function BudgetDeliverModal({
   budget,
   patient,
   payments = [],
+  onEditBudget = null,
 }) {
   const { settings, showToast, bcvInfo } = useDental();
   const [copied, setCopied] = useState(false);
@@ -141,6 +143,21 @@ ${budget.notes ? `📝 *Condiciones:* ${budget.notes}\n` : ''}${pagoMovilInfo}
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Enviar WhatsApp</span>
             </button>
+
+            {onEditBudget && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onEditBudget(budget);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition shadow-md"
+                title="Editar este presupuesto y sus procedimientos"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                <span>Editar</span>
+              </button>
+            )}
 
             <button
               type="button"

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDental } from '../../context/DentalContext';
 import DoctorHeader from '../../components/doctor/DoctorHeader';
+import ProceduresCatalogModal from '../../components/doctor/ProceduresCatalogModal';
 import { 
   Settings, 
   Mail, 
@@ -54,10 +55,12 @@ export default function ClinicSettingsPage() {
     isSnowActive,
     toggleSnowEffect,
     openThemeModal,
+    proceduresCatalog,
   } = useDental();
 
   const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [showProceduresModal, setShowProceduresModal] = useState(false);
 
   const [formSettings, setFormSettings] = useState({
     doctor_name: settings?.doctor_name || 'Dra. Adriana Parra',
@@ -284,6 +287,30 @@ export default function ClinicSettingsPage() {
             <span className="text-slate-400">
               Efecto de Nieve: <strong className="text-white">{isSnowActive ? 'Activada' : 'Pausada'}</strong>
             </span>
+          </div>
+        </div>
+
+        {/* TARIFARIO Y ARANCELES DE PROCEDIMIENTOS */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xs space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h4 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-teal-600" />
+                <span>Tarifario y Catálogo de Procedimientos Odontológicos</span>
+              </h4>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Configura los aranceles y procedimientos clínicos ({proceduresCatalog?.length || 0} registrados) con sus precios estándar en USD y equivalentes en Bs BCV.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowProceduresModal(true)}
+              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition active:scale-95 flex items-center gap-1.5"
+            >
+              <Sparkles className="w-4 h-4 text-teal-200" />
+              <span>Editar Tarifario y Precios</span>
+            </button>
           </div>
         </div>
 
@@ -719,6 +746,13 @@ export default function ClinicSettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Tarifario y Catálogo de Procedimientos */}
+      <ProceduresCatalogModal
+        isOpen={showProceduresModal}
+        onClose={() => setShowProceduresModal(false)}
+        mode="manager"
+      />
     </div>
   );
 }

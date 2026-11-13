@@ -26,6 +26,7 @@ import {
   initialPromotions,
   initialInventory,
   initialPatientConsents,
+  initialProceduresCatalog,
 } from '../lib/mockData';
 import { fetchOfficialBcvRate, getCachedBcvRate, CONTINGENCY_BCV_RATE } from '../lib/bcvRateService';
 import { getActiveThemeConfig, saveThemePreferences, THEME_CONFIGS } from '../lib/themeService';
@@ -262,6 +263,7 @@ export const DentalProvider = ({ children }) => {
   const [promotions, setPromotions] = useState(() => loadLocal('promotions', initialPromotions));
   const [inventory, setInventory] = useState(() => loadLocal('inventory', initialInventory));
   const [patientConsents, setPatientConsents] = useState(() => loadLocal('patientConsents', initialPatientConsents));
+  const [proceduresCatalog, setProceduresCatalog] = useState(() => loadLocal('proceduresCatalog', initialProceduresCatalog));
   const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
 
   // Cola de sincronización pendiente
@@ -586,6 +588,7 @@ export const DentalProvider = ({ children }) => {
   useEffect(() => { saveLocal('promotions', promotions); }, [promotions]);
   useEffect(() => { saveLocal('inventory', inventory); }, [inventory]);
   useEffect(() => { saveLocal('patientConsents', patientConsents); }, [patientConsents]);
+  useEffect(() => { saveLocal('proceduresCatalog', proceduresCatalog); }, [proceduresCatalog]);
   useEffect(() => { saveLocal('sync_queue', syncQueue); }, [syncQueue]);
   useEffect(() => { if (lastSyncTime) saveLocal('last_sync_time', lastSyncTime); }, [lastSyncTime]);
 
@@ -1674,6 +1677,47 @@ export const DentalProvider = ({ children }) => {
     return newConsent;
   };
 
+  // TARIFARIO Y CATÁLOGO DE PROCEDIMIENTOS ODONTOLÓGICOS (EDITABLE POR LA DOCTORA)
+  const addProcedureToCatalog = (procData) => {
+    const newProc = {
+      id: procData.id || `proc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name: (procData.name || '').trim(),
+      category: procData.category || 'Operatoria y Estética',
+      cost_usd: Number(procData.cost_usd) || 0,
+      estimated_minutes: Number(procData.estimated_minutes) || 45,
+      notes: procData.notes || '',
+    };
+    setProceduresCatalog((prev) => [newProc, ...prev]);
+    showToast(`Procedimiento "${newProc.name}" guardado en el tarifario.`, 'success');
+    return newProc;
+  };
+
+  const updateProcedureInCatalog = (procId, updatedFields) => {
+    setProceduresCatalog((prev) =>
+      prev.map((p) => {
+        if (p.id === procId) {
+          return {
+            ...p,
+            ...updatedFields,
+            cost_usd: updatedFields.cost_usd !== undefined ? Number(updatedFields.cost_usd) : p.cost_usd,
+          };
+        }
+        return p;
+      })
+    );
+    showToast('Procedimiento y arancel actualizado exitosamente.', 'success');
+  };
+
+  const deleteProcedureFromCatalog = (procId) => {
+    setProceduresCatalog((prev) => prev.filter((p) => p.id !== procId));
+    showToast('Procedimiento removido del tarifario.', 'warning');
+  };
+
+  const resetProceduresCatalog = () => {
+    setProceduresCatalog(initialProceduresCatalog);
+    showToast('Tarifario de procedimientos restablecido.', 'info');
+  };
+
   // Cálculos financieros
   const getPatientFinancials = (patientId) => {
     const patientBudgets = budgets.filter((b) => b.patient_id === patientId);
@@ -1804,6 +1848,12 @@ export const DentalProvider = ({ children }) => {
     // Consentimientos Informados Digitales
     patientConsents,
     savePatientConsent,
+    // Catálogo y Tarifario de Procedimientos Odontológicos
+    proceduresCatalog,
+    addProcedureToCatalog,
+    updateProcedureInCatalog,
+    deleteProcedureFromCatalog,
+    resetProceduresCatalog,
     // Buscador Rápido Global
     showGlobalSearchModal,
     setShowGlobalSearchModal,

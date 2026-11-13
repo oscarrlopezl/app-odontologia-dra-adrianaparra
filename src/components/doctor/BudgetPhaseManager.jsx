@@ -285,6 +285,7 @@ export default function BudgetPhaseManager({ patientId, onOpenPaymentModal, onOp
         budget={budgetToDeliver}
         patient={currentPatient}
         payments={payments}
+        onEditBudget={(b) => handleOpenEditModal(b)}
       />
     </div>
   );
